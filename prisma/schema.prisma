@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// camelCase 안쓰고 @map으로 SnakeCase로 변경해서 쓰는 이유는 AWS에서 마이그레이션 할때 네이밍관련으로 태클 걸린적이 있어서다.
+// SnakeCase는 대체로 문제없다.
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  emailVerified DateTime?  @map("email_verified")
+  username      String
+  password      String?
+  bio           String?
+  profileIcon   String?    @map("profile_icon")
+  role          UserRole   @default(USER)
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime?  @map("deleted_at")
+
+  account      Account[]
+  refreshToken RefreshToken[]
+
+  @@map("users")
+}
+
+model Account {
+  userId            String
+  provider          String
+  providerAccoundId String    @map("provider_accoundId")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([provider, providerAccoundId])
+  @@map("accounts")
+}
+
+model Verification {
+  type      VerificationType
+  email     String
+  token     String           @unique
+  expiredAt DateTime         @map("expired_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  @@id([type, email, token])
+  @@index([expiredAt]) // 만료된 토큰 정리용
+  @@map("verifications")
+}
+
+model RefreshToken {
+  id     String @id @default(cuid())
+  token  String @unique @map("token")
+  userId String @map("user_id")
+
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+  deviceId  String? @map("device_id")
+
+  issuedAt   DateTime  @default(now()) @map("issued_at") // 발급시간
+  expiredAt  DateTime  @map("expired_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  revokedAt  DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  // cron으로 expired 주기적으로 삭제 필요
+  @@index([userId, expiredAt])
+  @@index([token, revokedAt])
+  @@map("refresh_tokens")
+}
+
+model Tag {
+  slug       String   @id
+  name       String   @unique
+  usageCount Int      @default(0) @map("usage_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@index([usageCount, name]) // 인기순 정렬 인덱싱
+  @@map("tags")
+}
+
+enum VerificationType {
+  EMAIL_VERIFICATION // 회원가입 이메일 인증
+  PASSWORD_RESET // 비밀번호 재설정
+  EMAIL_CHANGE // 이메일 변경
+  TWO_FACTOR // 2FA 코드
+}
+
+enum UserStatus {
+  PENDING // 대기 중 (승인 대기 등)
+  ACTIVE // 활성 사용자
+  REJECTED // 승인이 거절된 사용자
+  BLOCKED // 차단된 사용자
+  DORMANT // 휴면 사용자
+  WITHDRAWN // 탈퇴한 사용자
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
