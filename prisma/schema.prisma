@@ -36,6 +36,7 @@ model User {
 }
 
 model Account {
+  id                Int       @default(autoincrement())
   userId            String
   provider          String
   providerAccoundId String    @map("provider_accoundId")
@@ -45,24 +46,25 @@ model Account {
 
   user User @relation(fields: [userId], references: [id])
 
-  @@id([provider, providerAccoundId])
+  @@unique([provider, providerAccoundId])
   @@map("accounts")
 }
 
 model Verification {
+  id        Int              @id @default(autoincrement())
   type      VerificationType
   email     String
-  token     String           @unique
+  token     String
   expiredAt DateTime         @map("expired_at")
   createdAt DateTime         @default(now()) @map("created_at")
 
-  @@id([type, email, token])
+  @@unique([type, email, token])
   @@index([expiredAt]) // 만료된 토큰 정리용
   @@map("verifications")
 }
 
 model RefreshToken {
-  id     String @id @default(cuid())
+  id     Int    @id @default(autoincrement())
   token  String @unique @map("token")
   userId String @map("user_id")
 
@@ -84,14 +86,91 @@ model RefreshToken {
 }
 
 model Tag {
-  slug       String   @id
+  id         Int      @id @default(autoincrement())
+  slug       String   @unique
   name       String   @unique
   usageCount Int      @default(0) @map("usage_count")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @default(now()) @updatedAt
 
-  @@index([usageCount, name]) // 인기순 정렬 인덱싱
+  relations TagRelation[]
+
+  @@index([slug])
+  @@index([usageCount(sort: Desc), name])
   @@map("tags")
+}
+
+model Channel {
+  id         Int    @id @default(autoincrement())
+  channelId  String @unique @map("channel_id")
+  name       String
+  handle     String
+  link       String
+  regionCode String @map("region_code")
+
+  videoCount      Int @default(0) @map("video_count")
+  viewCount       Int @default(0) @map("view_count")
+  subscriberCount Int @default(0) @map("subscriber_count")
+
+  publishedAt         DateTime       @map("published_at")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @default(now()) @updatedAt @map("updated_at")
+  lastVideoUploadedAt DateTime?      @map("last_video_uploaded_at")
+  subscription        Subscription[]
+
+  @@map("channels")
+}
+
+model Reference {
+  id          Int      @id @default(autoincrement())
+  userId      String   @map("user_id") // Clerk userId
+  title       String
+  url         String?
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("references")
+}
+
+// 폴리모픽 태그 관계 (중간 테이블)
+model TagRelation {
+  id     Int    @id @default(autoincrement())
+  tagId  Int    @map("tag_id")
+  userId String @map("user_id") // 태그를 붙인 유저
+
+  // 폴리모픽 필드
+  taggableType TaggableType @map("taggable_type") // "subscription" | "reference" | ...
+  taggableId   Int          @map("taggable_id") // 해당 레코드의 ID
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([tagId, taggableType, taggableId]) // 중복 방지
+  @@index([userId, taggableType]) // 유저별 타입별 조회
+  @@index([tagId, taggableType]) // 태그별 타입별 조회
+  @@index([taggableType, taggableId]) // 특정 리소스의 태그 조회
+  @@map("tag_relations")
+}
+
+// 유저별 채널 구독 (Watchlist)
+model Subscription {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id") // Clerk userId
+  channelId Int      @map("channel_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId]) // 한 유저가 같은 채널을 중복 구독 불가
+  @@index([userId]) // 유저별 구독 목록 조회
+  @@index([channelId]) // 채널별 구독자 수 조회
+  @@map("subscriptions")
 }
 
 enum VerificationType {
@@ -113,4 +192,9 @@ enum UserStatus {
 enum UserRole {
   ADMIN
   USER
+}
+
+enum TaggableType {
+  REFERENCE
+  CHANNEL
 }
