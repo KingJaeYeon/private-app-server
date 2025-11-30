@@ -31,6 +31,8 @@ model User {
 
   account      Account[]
   refreshToken RefreshToken[]
+  reference    Reference[]
+  tagRelation  TagRelation[]
 
   @@map("users")
 }
@@ -101,24 +103,44 @@ model Tag {
 }
 
 model Channel {
-  id         Int    @id @default(autoincrement())
-  channelId  String @unique @map("channel_id")
-  name       String
-  handle     String
-  link       String
-  regionCode String @map("region_code")
+  id        Int    @id @default(autoincrement())
+  channelId String @unique @map("channel_id")
 
-  videoCount      Int @default(0) @map("video_count")
-  viewCount       Int @default(0) @map("view_count")
-  subscriberCount Int @default(0) @map("subscriber_count")
+  name         String
+  handle       String?
+  description  String?
+  link         String
+  thumbnailUrl String? @map("thumbnail_url")
 
-  publishedAt         DateTime       @map("published_at")
-  createdAt           DateTime       @default(now()) @map("created_at")
-  updatedAt           DateTime       @default(now()) @updatedAt @map("updated_at")
-  lastVideoUploadedAt DateTime?      @map("last_video_uploaded_at")
-  subscription        Subscription[]
+  regionCode      String? @map("region_code")
+  defaultLanguage String? @map("default_language")
+
+  videoCount      Int    @default(0) @map("video_count")
+  viewCount       BigInt @default(0) @map("view_count")
+  subscriberCount Int    @default(0) @map("subscriber_count")
+
+  publishedAt         DateTime  @map("published_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+  lastVideoUploadedAt DateTime? @map("last_video_uploaded_at")
+
+  subscription   Subscription[]
+  channelHistory ChannelHistory[]
 
   @@map("channels")
+}
+
+model ChannelHistory {
+  id              Int      @id @default(autoincrement())
+  channelId       Int      @map("channel_id")
+  videoCount      Int      @default(0) @map("video_count")
+  viewCount       BigInt   @default(0) @map("view_count")
+  subscriberCount Int      @default(0) @map("subscriber_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  channel Channel @relation(fields: [channelId], references: [id])
+
+  @@index([channelId])
 }
 
 model Reference {
@@ -129,6 +151,8 @@ model Reference {
   description String?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("references")
@@ -147,7 +171,8 @@ model TagRelation {
   createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tagId, taggableType, taggableId]) // 중복 방지
   @@index([userId, taggableType]) // 유저별 타입별 조회
