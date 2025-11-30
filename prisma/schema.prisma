@@ -13,8 +13,6 @@ datasource db {
   provider = "postgresql"
 }
 
-// camelCase 안쓰고 @map으로 SnakeCase로 변경해서 쓰는 이유는 AWS에서 마이그레이션 할때 네이밍관련으로 태클 걸린적이 있어서다.
-// SnakeCase는 대체로 문제없다.
 model User {
   id            String     @id @default(cuid())
   email         String     @unique
