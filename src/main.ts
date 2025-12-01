@@ -28,7 +28,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true, // whitelist에서 걸러진 “불필요 필드”가 존재하면 요청 자체를 거부 (보안성 ↑)
       transform: true, // 요청 데이터 타입을 DTO에 맞게 자동 변환 -> string → number 변환 등
       transformOptions: {
-        enableImplicitConversion: true, // DTO에서 암시적으로 타입 변환 허용
+        enableImplicitConversion: true // DTO에서 암시적으로 타입 변환 허용
       },
       /**
        * ValidationPipe 가 오류를 생성할 때
@@ -37,7 +37,7 @@ async function bootstrap() {
       exceptionFactory: (errors) => {
         const messages = errors.map((error) => ({
           field: error.property,
-          constraints: Object.values(error.constraints || {}),
+          constraints: Object.values(error.constraints || {})
         }));
 
         return new HttpException(
@@ -45,25 +45,25 @@ async function bootstrap() {
             success: false,
             code: ERROR_CODES.VALIDATION_ERROR.code,
             message: ERROR_CODES.VALIDATION_ERROR.message,
-            details: messages,
+            details: messages
           },
-          HttpStatus.BAD_REQUEST,
+          HttpStatus.BAD_REQUEST
         );
-      },
-    }),
+      }
+    })
   );
 
-  // Error를 통합 처리 (HttpException + Prisma + Unknown)
+  // 1. Error를 통합 처리 (HttpException + Prisma + Unknown)
   const errorLoggingService = app.get(ErrorLoggingService);
   app.useGlobalFilters(new AllExceptionsFilter(errorLoggingService));
 
-  // 모든 정상 응답을 성공 표준 포맷으로 변환
+  // 2. 모든 정상 응답을 성공 표준 포맷으로 변환
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   // CORS 설정 (클라이언트 도메인만 허용)
   app.enableCors({
     origin: [process.env.FRONTEND_URL!, 'http://localhost:3000'].filter(Boolean),
-    credentials: true, // Cookie 포함 요청 허용
+    credentials: true // Cookie 포함 요청 허용
   });
 
   await app.listen(process.env.PORT ?? 3000);
