@@ -5,3 +5,9 @@ db:
 app:
   port: 3500
   front: "http://localhost:3000"
+  domain: ".test.com"
+
+
+jwt:
+  secret: "private-app-jwt"
+  expiresIn: 1000
