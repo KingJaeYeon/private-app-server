@@ -3,11 +3,8 @@ import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from
 import { Request, Response } from 'express';
 import { CustomException } from '../exceptions';
 import { ERROR_CODES } from '../exceptions';
-import { ErrorLoggingService } from '../../core/error-logging.service';
-import {
-  PrismaClientKnownRequestError,
-  PrismaClientValidationError,
-} from '../../generated/prisma/internal/prismaNamespace';
+import { ErrorLoggingService } from '@/core/error-logging.service';
+import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@generated/prisma/internal/prismaNamespace';
 
 interface ErrorResponse {
   success: false;
@@ -53,7 +50,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message: exceptionResponse.message,
         details: exceptionResponse.details,
         timestamp,
-        path,
+        path
       };
     }
 
@@ -70,7 +67,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           typeof exceptionResponse === 'string' ? exceptionResponse : exceptionResponse.message || exception.message,
         details: typeof exceptionResponse === 'object' ? exceptionResponse.details : undefined,
         timestamp,
-        path,
+        path
       };
     }
 
@@ -87,7 +84,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         code: ERROR_CODES.DATABASE_ERROR.code,
         message: ERROR_CODES.DATABASE_ERROR.message,
         timestamp,
-        path,
+        path
       };
     }
 
@@ -98,7 +95,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       code: ERROR_CODES.INTERNAL_SERVER_ERROR.code,
       message: ERROR_CODES.INTERNAL_SERVER_ERROR.message,
       timestamp,
-      path,
+      path
     };
   }
 
@@ -110,7 +107,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       code: ERROR_CODES.DATABASE_ERROR.code,
       message: ERROR_CODES.DATABASE_ERROR.message,
       timestamp,
-      path,
+      path
     };
 
     // Unique constraint는 비즈니스 로직상 의미있는 에러이므로 구체적으로 알려줌
@@ -124,7 +121,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           ...safeError,
           statusCode: HttpStatus.CONFLICT,
           code: ERROR_CODES.EMAIL_ALREADY_EXISTS.code,
-          message: ERROR_CODES.EMAIL_ALREADY_EXISTS.message,
+          message: ERROR_CODES.EMAIL_ALREADY_EXISTS.message
         };
       }
 
@@ -133,7 +130,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           ...safeError,
           statusCode: HttpStatus.CONFLICT,
           code: ERROR_CODES.USERNAME_ALREADY_EXISTS.code,
-          message: ERROR_CODES.USERNAME_ALREADY_EXISTS.message,
+          message: ERROR_CODES.USERNAME_ALREADY_EXISTS.message
         };
       }
 
@@ -142,7 +139,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ...safeError,
         statusCode: HttpStatus.CONFLICT,
         code: ERROR_CODES.CONFLICT.code,
-        message: ERROR_CODES.CONFLICT.message,
+        message: ERROR_CODES.CONFLICT.message
       };
     }
 
@@ -152,7 +149,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ...safeError,
         statusCode: HttpStatus.NOT_FOUND,
         code: ERROR_CODES.NOT_FOUND.code,
-        message: ERROR_CODES.NOT_FOUND.message,
+        message: ERROR_CODES.NOT_FOUND.message
       };
     }
 
@@ -170,7 +167,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       422: 'HTTP-422',
       429: 'HTTP-429',
       500: 'HTTP-500',
-      503: 'HTTP-503',
+      503: 'HTTP-503'
     };
     return codeMap[status] || 'HTTP-UNKNOWN';
   }

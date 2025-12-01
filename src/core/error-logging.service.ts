@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Request } from 'express';
-import { PrismaClientKnownRequestError } from '../generated/prisma/internal/prismaNamespace';
+import { PrismaClientKnownRequestError } from '@generated/prisma/internal/prismaNamespace';
 
 interface ErrorResponse {
   success: false;
