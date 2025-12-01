@@ -8,9 +8,10 @@ import { UsersModule } from '@/modules/users/users.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from '@/config/configuration';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 
 const isDev = process.env.NODE_ENV === 'development';
-console.log('isDve', isDev);
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,6 +30,10 @@ console.log('isDve', isDev);
     AuthModule
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }]
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard }
+  ]
 })
 export class AppModule {}
