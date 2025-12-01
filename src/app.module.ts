@@ -13,7 +13,11 @@ const isDev = process.env.NODE_ENV === 'development';
 console.log('isDve', isDev);
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+    ConfigModule.forRoot({
+      ignoreEnvFile: true,
+      isGlobal: true,
+      load: [configuration]
+    }),
     CoreModule,
     ThrottlerModule.forRoot([
       { name: 'default', limit: 60, ttl: 60000, skipIf: () => isDev },
