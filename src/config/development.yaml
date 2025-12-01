@@ -1,0 +1,7 @@
+db:
+  postgresql: "postgresql://postgres:1234@localhost:5432/mydb?schema=public"
+
+
+app:
+  port: 3500
+  front: "http://localhost:3000"
