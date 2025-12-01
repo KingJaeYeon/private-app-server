@@ -20,12 +20,7 @@ const isDev = process.env.NODE_ENV === 'development';
       load: [configuration]
     }),
     CoreModule,
-    ThrottlerModule.forRoot([
-      { name: 'default', limit: 60, ttl: 60000, skipIf: () => isDev },
-      { name: 'short', ttl: 1000, limit: 3, skipIf: () => isDev },
-      { name: 'medium', ttl: 10000, limit: 20, skipIf: () => isDev },
-      { name: 'long', ttl: 60000, limit: 100, skipIf: () => isDev }
-    ]),
+    ThrottlerModule.forRoot([{ limit: 60, ttl: 60000, skipIf: () => isDev }]),
     UsersModule,
     AuthModule
   ],
