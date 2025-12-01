@@ -2,7 +2,7 @@ import { Body, Controller, Headers, Ip, Post, Res } from '@nestjs/common';
 import { AuthService } from '@/modules/auth/auth.service';
 import type { Response } from 'express';
 import { Public } from '@/common/decorators';
-import { SignInDto } from '@/modules/auth/dto';
+import { SignInDto, SignUpDto } from '@/modules/auth/dto';
 
 @Controller('auth')
 export class AuthController {
@@ -25,5 +25,16 @@ export class AuthController {
 
   @Public()
   @Post('sign-up')
-  async signup() {}
+  async signup(
+    @Body() dto: SignUpDto,
+    @Res({ passthrough: true }) res: Response,
+    @Headers('userAgent') userAgent: string,
+    @Ip() ipAddress: string
+  ) {
+    const { id, email } = await this.authService.signUp(dto);
+
+    const token = await this.authService.generateJwtTokens({ userId: id, email }, userAgent, ipAddress);
+    this.authService.setAuthCookies(res, token);
+    return { data: { id, message: 'signIn successfully' } };
+  }
 }

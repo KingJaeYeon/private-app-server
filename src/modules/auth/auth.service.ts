@@ -10,6 +10,7 @@ import { CookieOptions } from 'express';
 import type { Response } from 'express';
 import { AppConfig, ConfigKey } from '@/config/config.interface';
 import { ConfigService } from '@nestjs/config';
+import { SignUpDto } from '@/modules/auth/dto';
 
 @Injectable()
 export class AuthService {
@@ -44,22 +45,6 @@ export class AuthService {
 
     const { password: _, ...result } = user;
     return result as User;
-  }
-
-  async signIn(user: User) {
-    const payload: JwtPayload = {
-      userId: user.id,
-      email: user.email
-    };
-
-    return {
-      accessToken: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username
-      }
-    };
   }
 
   async generateJwtTokens(payload: JwtPayload, userAgent: string, ipAddress: string) {
@@ -104,18 +89,32 @@ export class AuthService {
   }
 
   // 임시
-  async signUp(email: string, username: string, password: string) {
-    // 비밀번호 해싱
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await this.db.user.create({
-      data: {
-        email,
-        username,
-        password: hashedPassword
-      }
+  async signUp(dto: SignUpDto) {
+    const user = await this.db.user.findUnique({
+      where: { email: dto.email }
     });
 
-    return this.signIn(user);
+    if (user) {
+      throw new CustomException('EMAIL_ALREADY_EXISTS');
+    }
+
+    const latestVerification = await this.db.verification.findFirst({
+      where: { email: dto.email, type: 'EMAIL_VERIFICATION', expiredAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (!(latestVerification && latestVerification.token === dto.verifyCode)) {
+      throw new CustomException('VERIFICATION_INVALID');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    return this.db.user.create({
+      data: {
+        email: dto.email,
+        password: hashedPassword,
+        username: dto.email.split('@')[0],
+        emailVerified: new Date()
+      }
+    });
   }
 }
