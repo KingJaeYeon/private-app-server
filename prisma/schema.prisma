@@ -59,6 +59,7 @@ model Verification {
   id        Int              @id @default(autoincrement())
   type      VerificationType
   email     String
+  ip        String?
   token     String
   expiredAt DateTime         @map("expired_at")
   createdAt DateTime         @default(now()) @map("created_at")
@@ -66,6 +67,18 @@ model Verification {
   @@unique([type, email, token])
   @@index([expiredAt]) // 만료된 토큰 정리용
   @@map("verifications")
+}
+
+model Blacklist {
+  id        Int       @id @default(autoincrement())
+  ip        String
+  reason    String?
+  blockedAt DateTime  @default(now()) @map("blocked_at")
+  expiresAt DateTime? @map("expires_at") // 자동 해제 가능
+
+  @@index([ip])
+  @@index([expiresAt])
+  @@map("blacklist")
 }
 
 model RefreshToken {
