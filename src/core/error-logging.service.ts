@@ -39,7 +39,7 @@ export class ErrorLoggingService {
       statusCode: errorResponse.statusCode,
       userId: (request as any).user?.id,
       ip: request.ip,
-      userAgent: request.headers['user-agent'],
+      userAgent: request.headers['user-agent']
     };
 
     // Prisma 에러의 경우 상세 정보 추가
@@ -48,7 +48,7 @@ export class ErrorLoggingService {
         ...baseContext,
         prismaCode: exception.code,
         prismaMeta: exception.meta,
-        prismaClientVersion: exception.clientVersion,
+        prismaClientVersion: exception.clientVersion
       };
     }
 
@@ -58,9 +58,8 @@ export class ErrorLoggingService {
   private logServerError(exception: unknown, code: string, message: string, context: any) {
     // 상세한 에러 로깅
     this.logger.error(
-      `[${code}] ${message}`,
-      exception instanceof Error ? exception.stack : JSON.stringify(exception),
-      JSON.stringify(context, null, 2),
+      `[${code}] ${message}\n${JSON.stringify(context, null, 2)}`, // ← 컨텍스트를 메시지에 포함
+      exception instanceof Error ? exception.stack : undefined // ← 스택만
     );
 
     // TODO: 외부 모니터링 서비스 전송
