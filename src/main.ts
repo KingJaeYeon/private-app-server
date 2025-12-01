@@ -9,6 +9,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'body-parser';
 import { AllExceptionsFilter } from '@/common/filters';
 import { ResponseInterceptor } from '@/common/interceptors';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -21,7 +22,7 @@ async function bootstrap() {
 
   app.use(json({ limit: '5mb' }));
   app.use(urlencoded({ limit: '5mb', extended: true }));
-
+  const configService = app.get(ConfigService);
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // DTO에 정의된 프로퍼티만 허용 → 정의되지 않은 값 제거
@@ -62,11 +63,11 @@ async function bootstrap() {
 
   // CORS 설정 (클라이언트 도메인만 허용)
   app.enableCors({
-    origin: [process.env.FRONTEND_URL!, 'http://localhost:3000'].filter(Boolean),
+    origin: [configService.get<string>('app.front')!].filter(Boolean),
     credentials: true // Cookie 포함 요청 허용
   });
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(configService.get<number>('app.port') ?? 3000);
 }
 
 bootstrap();

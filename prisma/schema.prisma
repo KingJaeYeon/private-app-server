@@ -22,7 +22,7 @@ model User {
   id            String     @id @default(cuid())
   email         String     @unique
   emailVerified DateTime?  @map("email_verified")
-  username      String
+  username      String?    @unique
   password      String?
   bio           String?
   profileIcon   String?    @map("profile_icon")
@@ -214,7 +214,6 @@ enum UserStatus {
   REJECTED // 승인이 거절된 사용자
   BLOCKED // 차단된 사용자
   DORMANT // 휴면 사용자
-  WITHDRAWN // 탈퇴한 사용자
 }
 
 enum UserRole {

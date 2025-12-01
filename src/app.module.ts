@@ -6,11 +6,14 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { UsersModule } from '@/modules/users/users.module';
 import { AuthModule } from '@/modules/auth/auth.module';
+import { ConfigModule } from '@nestjs/config';
+import configuration from '@/config/configuration';
 
 const isDev = process.env.NODE_ENV === 'development';
 console.log('isDve', isDev);
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
     CoreModule,
     ThrottlerModule.forRoot([
       { name: 'default', limit: 60, ttl: 60000, skipIf: () => isDev },
