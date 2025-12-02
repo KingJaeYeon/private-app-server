@@ -6,6 +6,7 @@ export interface ConfigKey {
 
 export interface DbConfig {
   postgresql: string;
+  schema: string;
 }
 
 export interface JWTConfig {
