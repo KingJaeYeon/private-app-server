@@ -157,6 +157,7 @@ model ChannelHistory {
   channel Channel @relation(fields: [channelId], references: [id])
 
   @@index([channelId])
+  @@map("channel_histories")
 }
 
 model Reference {
