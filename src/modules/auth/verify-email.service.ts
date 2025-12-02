@@ -3,7 +3,9 @@ import { CustomException } from '@/common/exceptions';
 import { getRandomString } from '@/common/util/util';
 import { addMinutes, subMinutes } from 'date-fns';
 import { VerificationType } from '@generated/prisma/enums';
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 export class VerifyEmailService {
   constructor(private readonly db: PrismaService) {}
   // Rate Limiting 설정
