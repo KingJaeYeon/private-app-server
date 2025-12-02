@@ -2,7 +2,7 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nes
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Reflector } from '@nestjs/core';
-import { SKIP_RESPONSE_TRANSFORM } from '@/common/decorators/skip-response-transform.decorator';
+import { SKIP_RESPONSE_TRANSFORM } from '@/common/decorators';
 
 interface SuccessResponse<T> {
   success: true;

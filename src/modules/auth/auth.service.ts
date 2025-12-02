@@ -6,11 +6,13 @@ import { User } from '@generated/prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from '@/modules/auth/strategies/jwt.strategy';
 import { add } from 'date-fns';
-import { CookieOptions } from 'express';
 import type { Response } from 'express';
+import { CookieOptions } from 'express';
 import { AppConfig, ConfigKey } from '@/config/config.interface';
 import { ConfigService } from '@nestjs/config';
 import { SignUpDto } from '@/modules/auth/dto';
+import { getRandomString } from '@/common/util/util';
+import { AUTH_COOKIE } from '@/common/constants/auth';
 
 @Injectable()
 export class AuthService {
@@ -47,48 +49,6 @@ export class AuthService {
     return result as User;
   }
 
-  async generateJwtTokens(payload: JwtPayload, userAgent: string, ipAddress: string) {
-    const accessToken = this.jwtService.sign(payload);
-    const refreshToken = crypto.randomUUID();
-
-    await this.db.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId: payload.userId,
-        expiredAt: add(new Date(), { days: 7 }), // 7일 후
-        userAgent,
-        ipAddress
-      }
-    });
-
-    return { accessToken, refreshToken };
-  }
-
-  setAuthCookies(res: Response, tokens: { accessToken: string; refreshToken: string }) {
-    const { accessToken, refreshToken } = tokens;
-    const appConfig: AppConfig = this.configService.getOrThrow('app');
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    const baseOptions: CookieOptions = {
-      httpOnly: true,
-      secure: isProduction,
-      domain: isProduction ? appConfig.domain : undefined
-    };
-
-    res.cookie('access', accessToken, {
-      ...baseOptions,
-      sameSite: 'lax',
-      path: '/'
-    });
-
-    res.cookie('refresh', refreshToken, {
-      ...baseOptions,
-      sameSite: 'strict',
-      path: '/auth/refresh'
-    });
-  }
-
-  // 임시
   async signUp(dto: SignUpDto) {
     const user = await this.db.user.findUnique({
       where: { email: dto.email }
@@ -116,5 +76,117 @@ export class AuthService {
         emailVerified: new Date()
       }
     });
+  }
+
+  async generateJwtTokens({
+    payload,
+    ipAddress,
+    userAgent
+  }: {
+    payload: JwtPayload;
+    userAgent: string;
+    ipAddress: string;
+  }) {
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = getRandomString();
+
+    await this.db.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: payload.userId,
+        expiredAt: add(new Date(), { days: 7 }), // 7일 후
+        userAgent,
+        ipAddress
+      }
+    });
+
+    return { accessToken, refreshToken };
+  }
+
+  async clearAuthCookies(res: Response, refreshToken: string) {
+    if (refreshToken) {
+      const token = await this.db.refreshToken.findUnique({
+        where: { token: refreshToken }
+      });
+
+      if (token) {
+        await this.db.refreshToken.update({
+          where: { id: token.id },
+          data: { revokedAt: new Date() }
+        });
+      }
+    }
+    const expired = new Date(0);
+    this.setAccessCookie(res, null, expired);
+    this.setRefreshCookie(res, null, expired);
+  }
+
+  setAuthCookies(res: Response, tokens: { accessToken: string; refreshToken: string }) {
+    this.setAccessCookie(res, tokens.accessToken);
+    this.setRefreshCookie(res, tokens.refreshToken);
+  }
+
+  async rotateRefreshToken(refreshToken: string, ipAddress: string, userAgent: string) {
+    const storedToken = await this.db.refreshToken.findUnique({
+      where: { token: refreshToken },
+      include: { user: true }
+    });
+
+    if (!storedToken) {
+      throw new CustomException('INVALID_TOKEN');
+    }
+
+    const invalidToken = storedToken.revokedAt || storedToken.expiredAt < new Date();
+    if (invalidToken) {
+      await this.db.refreshToken
+        .delete({
+          where: { id: storedToken.id }
+        })
+        .then((r) => console.log('>> invalidToken:: delete', r.id));
+      throw new CustomException('REFRESH_TOKEN_EXPIRED');
+    }
+
+    await this.db.refreshToken.update({
+      where: { id: storedToken.id },
+      data: { revokedAt: new Date() }
+    });
+
+    const payload: JwtPayload = {
+      email: storedToken.user.email,
+      userId: storedToken.userId
+    };
+
+    return this.generateJwtTokens({ payload, ipAddress, userAgent });
+  }
+
+  private setAccessCookie(res: Response, value: string | null, expires?: Date) {
+    const base = this.getCookieBaseOptions();
+    res.cookie(AUTH_COOKIE.ACCESS, value ?? '', {
+      ...base,
+      sameSite: 'lax',
+      path: '/',
+      expires
+    });
+  }
+
+  private setRefreshCookie(res: Response, value: string | null, expires?: Date) {
+    const base = this.getCookieBaseOptions();
+    res.cookie(AUTH_COOKIE.REFRESH, value ?? '', {
+      ...base,
+      sameSite: 'strict',
+      path: '/auth/refresh',
+      expires
+    });
+  }
+
+  private getCookieBaseOptions(): CookieOptions {
+    const { domain } = this.configService.getOrThrow<AppConfig>('app');
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    return {
+      httpOnly: true,
+      secure: isProduction,
+      domain: isProduction ? domain : undefined
+    };
   }
 }

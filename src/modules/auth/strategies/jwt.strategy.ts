@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { ConfigKey, JWTConfig } from '@/config/config.interface';
+import { AUTH_COOKIE } from '@/common/constants/auth';
 
 export interface JwtPayload {
   userId: string;
@@ -15,7 +16,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const jwt: JWTConfig = configService.getOrThrow('jwt');
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req) => req?.cookies['access'] || null, // 쿠키에서 추출
+        (req) => req?.cookies[AUTH_COOKIE.ACCESS] || null, // 쿠키에서 추출
         ExtractJwt.fromAuthHeaderAsBearerToken(), // Authorization 헤더에서 추출
         ExtractJwt.fromUrlQueryParameter('token') // URL 쿼리 파라미터에서 추출
       ]),
