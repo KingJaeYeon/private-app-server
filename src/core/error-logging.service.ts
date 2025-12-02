@@ -27,7 +27,7 @@ export class ErrorLoggingService {
     if (statusCode >= 500) {
       this.logServerError(exception, code, message, logContext);
     } else {
-      this.logClientError(code, message, logContext);
+      this.logClientError(exception, code, message, logContext);
     }
   }
 
@@ -66,8 +66,11 @@ export class ErrorLoggingService {
     // this.sendToMonitoring(exception, context);
   }
 
-  private logClientError(code: string, message: string, context: any) {
+  private logClientError(exception: unknown, code: string, message: string, context: any) {
     // 경고 수준 로깅
-    this.logger.warn(`[${code}] ${message}`, JSON.stringify(context, null, 2));
+    this.logger.warn(
+      `[${code}] ${message}\n${JSON.stringify(context, null, 2)}`, // ← 컨텍스트를 메시지에 포함
+      exception instanceof Error ? exception.stack : undefined // ← 스택만
+    );
   }
 }
