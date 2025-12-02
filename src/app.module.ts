@@ -2,13 +2,15 @@ import { Module } from '@nestjs/common';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { CoreModule } from '@/core/core.module';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { UsersModule } from '@/modules/users/users.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from '@/config/configuration';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { AllExceptionsFilter } from '@/common/filters';
+import { ResponseInterceptor } from '@/common/interceptors';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -28,7 +30,9 @@ const isDev = process.env.NODE_ENV === 'development';
   providers: [
     AppService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
-    { provide: APP_GUARD, useClass: JwtAuthGuard }
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor }
   ]
 })
 export class AppModule {}

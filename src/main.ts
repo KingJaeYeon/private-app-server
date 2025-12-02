@@ -1,14 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
 import { AppModule } from '@/app.module';
-import { ErrorLoggingService } from '@/core/error-logging.service';
 import { HttpException, HttpStatus, ValidationPipe } from '@nestjs/common';
 import { ERROR_CODES } from './common/exceptions';
 import cookieParser from 'cookie-parser';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'body-parser';
-import { AllExceptionsFilter } from '@/common/filters';
-import { ResponseInterceptor } from '@/common/interceptors';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig, ConfigKey } from '@/config/config.interface';
 
@@ -58,13 +55,6 @@ async function bootstrap() {
   );
 
   const appConfig = config.getOrThrow<AppConfig>('app');
-
-  // 1. Error를 통합 처리 (HttpException + Prisma + Unknown)
-  const errorLoggingService = app.get(ErrorLoggingService);
-  app.useGlobalFilters(new AllExceptionsFilter(errorLoggingService));
-
-  // 2. 모든 정상 응답을 성공 표준 포맷으로 변환
-  app.useGlobalInterceptors(new ResponseInterceptor());
 
   // CORS 설정 (클라이언트 도메인만 허용)
   app.enableCors({
