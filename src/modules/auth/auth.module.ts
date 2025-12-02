@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ConfigKey, JWTConfig } from '@/config/config.interface';
 import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
+import { VerifyEmailService } from '@/modules/auth/verify-email.service';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
     PassportModule
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, VerifyEmailService],
   exports: [AuthService]
 })
 export class AuthModule {}
