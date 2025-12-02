@@ -1,12 +1,20 @@
 import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 export class SignInDto {
+  /**
+   * 이메일 또는 사용자명
+   * @example  "user@example.com | username"
+   */
   @IsString()
   @IsNotEmpty()
-  identifier: string; // email 또는 username
+  identifier: string;
 
+  /**
+   * 비밀번호 (4자 이상)
+   * @example "password123"
+   */
   @IsString()
+  @MinLength(4)
   @IsNotEmpty()
-  @MinLength(8)
   password: string;
 }

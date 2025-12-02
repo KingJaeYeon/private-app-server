@@ -1,5 +1,5 @@
 db:
-  postgresql: "postgresql://postgres:1234@localhost:5432/mydb?schema=public"
+  postgresql: "postgresql://postgres:1234@localhost:5432/mydb?schema=privateapp"
 
 
 app:

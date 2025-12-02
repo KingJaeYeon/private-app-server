@@ -1,12 +1,13 @@
 import { Body, Controller, Headers, Ip, Post, Req, Res } from '@nestjs/common';
 import { AuthService } from '@/modules/auth/auth.service';
 import type { Response, Request } from 'express';
-import { ClientIp, Public } from '@/common/decorators';
+import { ClientInfo, Public } from '@/common/decorators';
 import { SendVerificationEmailDto, SignInDto, SignUpDto, VerifyEmailDto } from '@/modules/auth/dto';
 import { CheckBlacklist } from '@/common/decorators';
 import { VerifyEmailService } from '@/modules/auth/verify-email.service';
 import { AUTH_COOKIE } from '@/common/constants/auth';
 import { CustomException } from '@/common/exceptions';
+import { type ClientInfoData } from '@/common/decorators/client-info.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -17,48 +18,39 @@ export class AuthController {
 
   @Public()
   @Post('sign-in')
-  async signIn(
-    @Body() dto: SignInDto,
-    @Res({ passthrough: true }) res: Response,
-    @Headers('userAgent') userAgent: string,
-    @Ip() ipAddress: string
-  ) {
+  async signIn(@Body() dto: SignInDto, @Res({ passthrough: true }) res: Response, @ClientInfo() info: ClientInfoData) {
     const { id, email } = await this.authService.validateUser(dto.identifier, dto.password);
-
-    const token = await this.authService.generateJwtTokens({ payload: { userId: id, email }, userAgent, ipAddress });
+    const token = await this.authService.generateJwtTokens({
+      payload: { userId: id, email },
+      userAgent: info.userAgent,
+      ipAddress: info.ip
+    });
     this.authService.setAuthCookies(res, token);
     return { id, message: 'signIn successfully' };
   }
 
   @Public()
   @Post('sign-up')
-  async signup(
-    @Body() dto: SignUpDto,
-    @Res({ passthrough: true }) res: Response,
-    @Headers('userAgent') userAgent: string,
-    @Ip() ipAddress: string
-  ) {
+  async signup(@Body() dto: SignUpDto, @Res({ passthrough: true }) res: Response, @ClientInfo() info: ClientInfoData) {
     const { id, email } = await this.authService.signUp(dto);
-
-    const token = await this.authService.generateJwtTokens({ payload: { userId: id, email }, userAgent, ipAddress });
+    const token = await this.authService.generateJwtTokens({
+      payload: { userId: id, email },
+      userAgent: info.userAgent,
+      ipAddress: info.ip
+    });
     this.authService.setAuthCookies(res, token);
     return { id, message: 'signUp successfully' };
   }
 
   @Post('refresh')
-  async refresh(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Headers('userAgent') userAgent: string,
-    @Ip() ipAddress: string
-  ) {
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response, @ClientInfo() info: ClientInfoData) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
 
     if (!refreshToken) {
       throw new CustomException('FORBIDDEN');
     }
 
-    const token = await this.authService.rotateRefreshToken(refreshToken, ipAddress, userAgent);
+    const token = await this.authService.rotateRefreshToken(refreshToken, info.ip, info.userAgent);
     this.authService.setAuthCookies(res, token);
     return 'RefreshToken rotated';
   }
@@ -72,7 +64,7 @@ export class AuthController {
 
   @Post('send-verification-email')
   @CheckBlacklist()
-  async sendVerificationEmail(@Body() dto: SendVerificationEmailDto, @ClientIp() ip: string) {
+  async sendVerificationEmail(@Body() dto: SendVerificationEmailDto, @ClientInfo() { ip }: ClientInfoData) {
     return this.verifyEmailService.requestEmailVerification(dto.email, ip);
   }
 

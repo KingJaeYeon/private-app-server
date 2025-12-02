@@ -8,6 +8,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'body-parser';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig, ConfigKey } from '@/config/config.interface';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AUTH_COOKIE } from '@/common/constants/auth';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -22,6 +24,19 @@ async function bootstrap() {
   app.use(urlencoded({ limit: '5mb', extended: true }));
 
   const config = app.get(ConfigService<ConfigKey>);
+  const appConfig = config.getOrThrow<AppConfig>('app');
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Your API')
+    .setDescription('API 문서')
+    .setVersion('1.0')
+    .addCookieAuth(AUTH_COOKIE.ACCESS, { type: 'apiKey', in: 'cookie' }, AUTH_COOKIE.ACCESS)
+    .addCookieAuth(AUTH_COOKIE.REFRESH, { type: 'apiKey', in: 'cookie' }, AUTH_COOKIE.REFRESH)
+    .addServer(`http://localhost:${appConfig.port}`, 'Local')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api-docs', app, document); // /api-docs 경로
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -54,8 +69,6 @@ async function bootstrap() {
     })
   );
 
-  const appConfig = config.getOrThrow<AppConfig>('app');
-
   // CORS 설정 (클라이언트 도메인만 허용)
   app.enableCors({
     origin: [appConfig.front].filter(Boolean),
@@ -63,6 +76,9 @@ async function bootstrap() {
   });
 
   await app.listen(appConfig.port ?? 3000);
+
+  console.log(`🚀 Server: http://localhost:${appConfig.port}`);
+  console.log(`📚 Swagger: http://localhost:${appConfig.port}/api-docs`);
 }
 
 bootstrap();
