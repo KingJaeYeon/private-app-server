@@ -9,7 +9,7 @@ interface ErrorDefinition {
 const defineError = (code: string, message: string, statusCode: HttpStatus): ErrorDefinition => ({
   code,
   message,
-  statusCode,
+  statusCode
 });
 // TODO: i18n 적용 할땐 message: "error.user.not_found" 이런식으로 키값으로 변경해야함
 export const ERROR_CODES = {
@@ -21,6 +21,7 @@ export const ERROR_CODES = {
   REFRESH_TOKEN_REVOKED: defineError('AUTH-005', '리프레시 토큰이 취소되었습니다', HttpStatus.UNAUTHORIZED),
   UNAUTHORIZED: defineError('AUTH-006', '인증이 필요합니다', HttpStatus.UNAUTHORIZED),
   FORBIDDEN: defineError('AUTH-007', '접근 권한이 없습니다', HttpStatus.FORBIDDEN),
+  BLACKLIST_IP: defineError('AUTH-008', '요청을 처리할 수 없습니다. 잠시 후 다시 시도해주세요.', HttpStatus.FORBIDDEN),
 
   // ===== 사용자 (USER) =====
   USER_NOT_FOUND: defineError('USER-001', '사용자를 찾을 수 없습니다', HttpStatus.NOT_FOUND),
@@ -48,7 +49,7 @@ export const ERROR_CODES = {
   SUBSCRIPTION_LIMIT_EXCEEDED: defineError(
     'SUBSCRIPTION-003',
     '구독 가능한 채널 수를 초과했습니다',
-    HttpStatus.BAD_REQUEST,
+    HttpStatus.BAD_REQUEST
   ),
   NOT_SUBSCRIBED: defineError('SUBSCRIPTION-004', '구독하지 않은 채널입니다', HttpStatus.BAD_REQUEST),
 
@@ -68,23 +69,33 @@ export const ERROR_CODES = {
   NOT_FOUND: defineError('COMMON-002', '요청한 리소스를 찾을 수 없습니다', HttpStatus.NOT_FOUND),
   BAD_REQUEST: defineError('COMMON-003', '잘못된 요청입니다', HttpStatus.BAD_REQUEST),
   CONFLICT: defineError('COMMON-004', '이미 존재하는 리소스입니다', HttpStatus.CONFLICT),
+  TO_MANY_REQUEST: defineError(
+    'COMMON-005',
+    '요청이 너무 많습니다. 잠시 후 다시 시도해주세요',
+    HttpStatus.TOO_MANY_REQUESTS
+  ),
+  TO_MANY_REQUEST_BLOCK: defineError(
+    'COMMON-005',
+    '요청이 너무 많습니다. 고객센터로 문의해주세요',
+    HttpStatus.TOO_MANY_REQUESTS
+  ),
 
   // ===== 시스템 (INTERNAL) - 클라이언트에 상세 정보 노출 금지 =====
   INTERNAL_SERVER_ERROR: defineError(
     'INTERNAL-001',
     '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요',
-    HttpStatus.INTERNAL_SERVER_ERROR,
+    HttpStatus.INTERNAL_SERVER_ERROR
   ),
   DATABASE_ERROR: defineError(
     'INTERNAL-002',
     '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요',
-    HttpStatus.INTERNAL_SERVER_ERROR,
+    HttpStatus.INTERNAL_SERVER_ERROR
   ),
   SERVICE_UNAVAILABLE: defineError(
     'INTERNAL-003',
     '서비스를 일시적으로 이용할 수 없습니다',
-    HttpStatus.SERVICE_UNAVAILABLE,
-  ),
+    HttpStatus.SERVICE_UNAVAILABLE
+  )
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_CODES;
