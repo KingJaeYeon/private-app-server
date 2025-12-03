@@ -12,7 +12,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     const dbConfig: DbConfig = configService.getOrThrow('db');
 
     const pool = new PrismaPg({ connectionString: dbConfig.postgresql }, { schema: dbConfig.schema });
-    super({ adapter: pool, log: ['query', 'info', 'warn', 'error'] });
+    super({
+      adapter: pool
+      // log: ['query', 'info', 'warn', 'error']
+    });
   }
 
   async onModuleInit() {
@@ -21,7 +24,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       this.logger.log('📦 Database connected successfully');
     } catch (err) {
       this.logger.error('❌ Failed to connect to database', err);
-      throw err; // 연결 실패 시 서버가 바로 죽어서 문제 원인 바로 확인 가능
+      throw err; // 연결 실패 시 exception filter
     }
   }
 
@@ -31,7 +34,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       this.logger.log('📦 Database disconnect successfully');
     } catch (err) {
       this.logger.error('❌ Failed to disconnect to database', err);
-      throw err; // 연결 실패 시 서버가 바로 죽어서 문제 원인 바로 확인 가능
+      throw err; // 연결 실패 시 exception filter
     }
   }
 }

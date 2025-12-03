@@ -45,8 +45,7 @@ export class VerifyEmailService {
     this.sendEmail(email, token);
 
     return {
-      message: '인증 이메일이 발송되었습니다',
-      expiresIn: `${this.TOKEN_EXPIRY_MINUTES}분`
+      message: `인증 이메일이 발송되었습니다 - ${this.TOKEN_EXPIRY_MINUTES}분`
     };
   }
 
@@ -70,10 +69,6 @@ export class VerifyEmailService {
     if (verification.expiredAt < new Date()) {
       throw new CustomException('VERIFICATION_EXPIRED');
     }
-
-    return {
-      message: 'verify email success'
-    };
   }
 
   private async validateEmailVerificationRate(ip: string) {

@@ -41,7 +41,7 @@ export class AuthService {
     // TODO: Email 인증 여부
 
     const isPasswordValid = await bcrypt.compare(password, user.password as string);
-    if (isPasswordValid) {
+    if (!isPasswordValid) {
       throw new CustomException('INVALID_CREDENTIALS');
     }
 
@@ -104,11 +104,12 @@ export class AuthService {
   }
 
   async clearAuthCookies(res: Response, refreshToken: string) {
+    console.log('refreshToken', refreshToken);
     if (refreshToken) {
       const token = await this.db.refreshToken.findUnique({
         where: { token: refreshToken }
       });
-
+      console.log(token);
       if (token) {
         await this.db.refreshToken.update({
           where: { id: token.id },
@@ -118,12 +119,14 @@ export class AuthService {
     }
     const expired = new Date(0);
     this.setAccessCookie(res, null, expired);
-    this.setRefreshCookie(res, null, expired);
+    this.setRefreshCookie(res, null, 'refresh', expired);
+    this.setRefreshCookie(res, null, 'logout', expired);
   }
 
   setAuthCookies(res: Response, tokens: { accessToken: string; refreshToken: string }) {
     this.setAccessCookie(res, tokens.accessToken);
-    this.setRefreshCookie(res, tokens.refreshToken);
+    this.setRefreshCookie(res, tokens.refreshToken, 'refresh');
+    this.setRefreshCookie(res, tokens.refreshToken, 'logout');
   }
 
   async rotateRefreshToken(refreshToken: string, ipAddress: string, userAgent: string) {
@@ -169,12 +172,12 @@ export class AuthService {
     });
   }
 
-  private setRefreshCookie(res: Response, value: string | null, expires?: Date) {
+  private setRefreshCookie(res: Response, value: string | null, path: 'logout' | 'refresh', expires?: Date) {
     const base = this.getCookieBaseOptions();
     res.cookie(AUTH_COOKIE.REFRESH, value ?? '', {
       ...base,
       sameSite: 'strict',
-      path: '/auth/refresh',
+      path: `/auth/${path}`,
       expires
     });
   }
