@@ -19,28 +19,41 @@ export class AuthController {
   @Public()
   @ApiActionResponse({ id: 'userId', message: 'signIn successfully check cookies' })
   @Post('sign-in')
-  async signIn(@Body() dto: SignInDto, @Res({ passthrough: true }) res: Response, @ClientInfo() info: ClientInfoData) {
+  async signIn(
+    @Req() req: Request,
+    @Body() dto: SignInDto,
+    @Res({ passthrough: true }) res: Response,
+    @ClientInfo() info: ClientInfoData
+  ) {
     const { id, email } = await this.authService.validateUser(dto.identifier, dto.password);
     const token = await this.authService.generateJwtTokens({
       payload: { userId: id, email },
       userAgent: info.userAgent,
       ipAddress: info.ip
     });
-    this.authService.setAuthCookies(res, token);
+    const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
+
+    await this.authService.setSignInAuthCookies(res, token, refreshToken);
     return { id, message: 'signIn successfully' };
   }
 
   @Public()
   @Post('sign-up')
   @ApiActionResponse({ id: 'userId', message: 'signUp successfully check cookies' })
-  async signup(@Body() dto: SignUpDto, @Res({ passthrough: true }) res: Response, @ClientInfo() info: ClientInfoData) {
+  async signup(
+    @Req() req: Request,
+    @Body() dto: SignUpDto,
+    @Res({ passthrough: true }) res: Response,
+    @ClientInfo() info: ClientInfoData
+  ) {
     const { id, email } = await this.authService.signUp(dto);
     const token = await this.authService.generateJwtTokens({
       payload: { userId: id, email },
       userAgent: info.userAgent,
       ipAddress: info.ip
     });
-    this.authService.setAuthCookies(res, token);
+    const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
+    await this.authService.setSignInAuthCookies(res, token, refreshToken);
     return { id, message: 'signUp successfully' };
   }
 
@@ -49,7 +62,6 @@ export class AuthController {
   @HttpCode(200)
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response, @ClientInfo() info: ClientInfoData) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
-
     if (!refreshToken) {
       throw new CustomException('FORBIDDEN');
     }

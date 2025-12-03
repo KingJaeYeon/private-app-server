@@ -88,7 +88,7 @@ export class AuthService {
     ipAddress: string;
   }) {
     const accessToken = this.jwtService.sign(payload);
-    const refreshToken = getRandomString();
+    const refreshToken = Math.random().toString(36).slice(2, 13);
 
     await this.db.refreshToken.create({
       data: {
@@ -104,12 +104,11 @@ export class AuthService {
   }
 
   async clearAuthCookies(res: Response, refreshToken: string) {
-    console.log('refreshToken', refreshToken);
     if (refreshToken) {
       const token = await this.db.refreshToken.findUnique({
         where: { token: refreshToken }
       });
-      console.log(token);
+
       if (token) {
         await this.db.refreshToken.update({
           where: { id: token.id },
@@ -119,14 +118,32 @@ export class AuthService {
     }
     const expired = new Date(0);
     this.setAccessCookie(res, null, expired);
-    this.setRefreshCookie(res, null, 'refresh', expired);
-    this.setRefreshCookie(res, null, 'logout', expired);
+    this.setRefreshCookie(res, null, expired);
+  }
+
+  async setSignInAuthCookies(
+    res: Response,
+    tokens: { accessToken: string; refreshToken: string },
+    curRefreshToken?: string
+  ) {
+    const storedToken = await this.db.refreshToken.findFirst({
+      where: { token: curRefreshToken },
+      include: { user: true }
+    });
+
+    if (storedToken) {
+      await this.db.refreshToken.update({
+        where: { id: storedToken.id },
+        data: { revokedAt: new Date() }
+      });
+    }
+
+    this.setAuthCookies(res, tokens);
   }
 
   setAuthCookies(res: Response, tokens: { accessToken: string; refreshToken: string }) {
     this.setAccessCookie(res, tokens.accessToken);
-    this.setRefreshCookie(res, tokens.refreshToken, 'refresh');
-    this.setRefreshCookie(res, tokens.refreshToken, 'logout');
+    this.setRefreshCookie(res, tokens.refreshToken);
   }
 
   async rotateRefreshToken(refreshToken: string, ipAddress: string, userAgent: string) {
@@ -172,12 +189,12 @@ export class AuthService {
     });
   }
 
-  private setRefreshCookie(res: Response, value: string | null, path: 'logout' | 'refresh', expires?: Date) {
+  private setRefreshCookie(res: Response, value: string | null, expires?: Date) {
     const base = this.getCookieBaseOptions();
     res.cookie(AUTH_COOKIE.REFRESH, value ?? '', {
       ...base,
       sameSite: 'strict',
-      path: `/auth/${path}`,
+      path: `/auth`,
       expires
     });
   }
