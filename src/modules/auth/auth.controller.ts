@@ -62,12 +62,14 @@ export class AuthController {
     return 'logout successfully';
   }
 
+  @Public()
   @Post('send-verification-email')
   @CheckBlacklist()
   async sendVerificationEmail(@Body() dto: SendVerificationEmailDto, @ClientInfo() { ip }: ClientInfoData) {
     return this.verifyEmailService.requestEmailVerification(dto.email, ip);
   }
 
+  @Public()
   @Post('verify-email')
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.verifyEmailService.verifyEmail(dto.email, dto.token);

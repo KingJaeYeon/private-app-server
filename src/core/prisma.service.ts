@@ -7,11 +7,12 @@ import { ConfigKey, DbConfig } from '@/config/config.interface';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
+
   constructor(configService: ConfigService<ConfigKey>) {
     const dbConfig: DbConfig = configService.getOrThrow('db');
 
     const pool = new PrismaPg({ connectionString: dbConfig.postgresql }, { schema: dbConfig.schema });
-    super({ adapter: pool });
+    super({ adapter: pool, log: ['query', 'info', 'warn', 'error'] });
   }
 
   async onModuleInit() {
