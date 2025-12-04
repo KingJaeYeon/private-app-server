@@ -2,6 +2,17 @@
 // npm install --save-dev prisma dotenv
 import 'dotenv/config';
 import { defineConfig, env } from 'prisma/config';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import * as yaml from 'js-yaml';
+
+const YAML_CONFIG_FILENAME = `./src/config/development.yaml`;
+
+const url = () => {
+  const file = readFileSync(join(__dirname, YAML_CONFIG_FILENAME), 'utf8');
+  const config = yaml.load(file) as Record<string, any>;
+  return `${config['db'].postgresql}?schema=${config['db'].schema}`;
+};
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
@@ -10,6 +21,6 @@ export default defineConfig({
     seed: 'tsx prisma/seed.ts'
   },
   datasource: {
-    url: env('DATABASE_URL')
+    url: url() ?? env('DATABASE_URL')
   }
 });
