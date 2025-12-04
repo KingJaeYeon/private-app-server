@@ -10,6 +10,13 @@ import { ConfigService } from '@nestjs/config';
 import { AppConfig, ConfigKey } from '@/config/config.interface';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AUTH_COOKIE } from '@/common/constants/auth';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const swaggerDescription = readFileSync(
+  join(__dirname, 'docs/error-codes.md'),
+  'utf8',
+);
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -28,7 +35,7 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Your API')
-    .setDescription('API 문서')
+    .setDescription(swaggerDescription)
     .setVersion('1.0')
     .addCookieAuth(AUTH_COOKIE.ACCESS, { type: 'apiKey', in: 'cookie' }, AUTH_COOKIE.ACCESS)
     .addCookieAuth(AUTH_COOKIE.REFRESH, { type: 'apiKey', in: 'cookie' }, AUTH_COOKIE.REFRESH)

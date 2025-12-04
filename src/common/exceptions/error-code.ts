@@ -41,21 +41,21 @@ export const GLOBAL_ERROR_CODES = {
     'GLOBAL'
   ),
   DATABASE_ERROR: defineError(
-    'INTERNAL-002',
+    'INTERNAL-003',
     '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
     HttpStatus.INTERNAL_SERVER_ERROR,
     'Database error occurred.',
     'GLOBAL'
   ),
   SERVICE_UNAVAILABLE: defineError(
-    'INTERNAL-003',
+    'INTERNAL-004',
     '서비스를 일시적으로 이용할 수 없습니다.',
     HttpStatus.SERVICE_UNAVAILABLE,
     'External service unavailable.',
     'GLOBAL'
   ),
   PRISMA_VALIDATION_ERROR: defineError(
-    'INTERNAL-004',
+    'INTERNAL-005',
     '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
     HttpStatus.INTERNAL_SERVER_ERROR,
     'Prisma validation failed before executing SQL',
@@ -78,7 +78,7 @@ export const GLOBAL_ERROR_CODES = {
     'GLOBAL'
   ),
   VALIDATION_ERROR: defineError(
-    'GLOBAL-001',
+    'GLOBAL-003',
     '검증에 실패했습니다. 다시 입력해주세요.',
     HttpStatus.BAD_REQUEST,
     'validate fail',

@@ -12,6 +12,10 @@
         "include": "config/*.yaml",
         "watchAssets": true,
         "outDir": "dist/src"
+      },
+      {
+        "include": "docs/**/*.md",
+        "outDir": "dist/src"
       }
     ],
     "watchAssets": true,
