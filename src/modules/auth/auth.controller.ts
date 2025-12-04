@@ -8,6 +8,7 @@ import { AUTH_COOKIE } from '@/common/constants/auth';
 import { CustomException } from '@/common/exceptions';
 import { type ClientInfoData } from '@/common/decorators/client-info.decorator';
 import { ApiActionResponse } from '@/common/decorators/api-action-response.decorator';
+import { ApiErrorResponses } from '@/common/decorators/api-error-response.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -38,6 +39,7 @@ export class AuthController {
       }
     }
   })
+  @ApiErrorResponses(['INVALID_CREDENTIALS'])
   @Post('sign-in')
   async signIn(
     @Req() req: Request,
@@ -80,6 +82,7 @@ export class AuthController {
       }
     }
   })
+  @ApiErrorResponses(['EMAIL_ALREADY_EXISTS','VERIFICATION_INVALID'])
   async signup(
     @Req() req: Request,
     @Body() dto: SignUpDto,
