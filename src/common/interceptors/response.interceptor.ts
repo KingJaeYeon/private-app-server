@@ -6,7 +6,7 @@ import { SKIP_RESPONSE_TRANSFORM } from '@/common/decorators';
 
 interface SuccessResponse<T> {
   success: true;
-  data: T;
+  data?: T;
   timestamp: string;
 }
 
@@ -37,11 +37,17 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, SuccessRespons
           return data;
         }
 
-        return {
+        const responseBody: SuccessResponse<T> = {
           success: true,
-          data,
           timestamp: new Date().toISOString()
         };
+
+        // 💡 data 값이 null, undefined, 또는 void가 아닐 경우에만 data 필드를 추가
+        if (data !== null && data !== undefined) {
+          responseBody.data = data;
+        }
+
+        return responseBody;
       })
     );
   }

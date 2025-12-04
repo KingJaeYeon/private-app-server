@@ -1,12 +1,19 @@
-import { applyDecorators } from '@nestjs/common';
-import { ApiOkResponse } from '@nestjs/swagger';
+import { applyDecorators, HttpStatus } from '@nestjs/common';
+import { ApiResponse } from '@nestjs/swagger';
+
+type Options = {
+  id?: string | number;
+  message?: string;
+  status?: HttpStatus;
+  description?: string;
+};
 
 /** swagger get을 제외한 요청
  * @example
  * ApiActionResponse()
  */
-export function ApiActionResponse(options: { id?: string | number; message?: string }) {
-  const { id, message } = options ?? {};
+export function ApiActionResponse(options: Options) {
+  const { id, message, status = 201, description } = options ?? {};
 
   const dataProperties: Record<string, any> = {};
 
@@ -23,8 +30,11 @@ export function ApiActionResponse(options: { id?: string | number; message?: str
     };
   }
 
+
   return applyDecorators(
-    ApiOkResponse({
+    ApiResponse({
+      status,
+      description,
       schema: {
         properties: {
           success: { type: 'boolean', example: true },

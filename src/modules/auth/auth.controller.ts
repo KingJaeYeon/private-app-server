@@ -17,7 +17,11 @@ export class AuthController {
   ) {}
 
   @Public()
-  @ApiActionResponse({ id: 'userId', message: 'signIn successfully check cookies' })
+  @ApiActionResponse({
+    id: 'userId',
+    message: 'signIn successfully check cookies',
+    description: '로그인 성공. **Access Token**과 **Refresh Token** 쿠키가 응답 헤더에 설정됩니다.'
+  })
   @Post('sign-in')
   async signIn(
     @Req() req: Request,
@@ -34,12 +38,12 @@ export class AuthController {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
 
     await this.authService.setSignInAuthCookies(res, token, refreshToken);
-    return { id, message: 'signIn successfully' };
+    return { id };
   }
 
   @Public()
   @Post('sign-up')
-  @ApiActionResponse({ id: 'userId', message: 'signUp successfully check cookies' })
+  @ApiActionResponse({ id: 'userId', description: '회원가입 성공' })
   async signup(
     @Req() req: Request,
     @Body() dto: SignUpDto,
@@ -54,12 +58,11 @@ export class AuthController {
     });
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
     await this.authService.setSignInAuthCookies(res, token, refreshToken);
-    return { id, message: 'signUp successfully' };
+    return { id };
   }
 
   @Post('refresh')
-  @ApiActionResponse({ message: 'RefreshToken rotated check cookies' })
-  @HttpCode(200)
+  @ApiActionResponse({ description: '리프레시 토큰 재발급' })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response, @ClientInfo() info: ClientInfoData) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
     if (!refreshToken) {
@@ -68,30 +71,27 @@ export class AuthController {
 
     const token = await this.authService.rotateRefreshToken(refreshToken, info.ip, info.userAgent);
     this.authService.setAuthCookies(res, token);
-    return 'RefreshToken rotated';
   }
 
   @Post('logout')
-  @HttpCode(200)
-  @ApiActionResponse({ message: 'logout successfully' })
+  @ApiActionResponse({ description: '로그아웃 성공 - 쿠키제거' })
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
     await this.authService.clearAuthCookies(res, refreshToken);
-    return 'logout successfully';
   }
 
   @Public()
   @Post('send-verification-email')
-  @ApiActionResponse({ message: '인증 이메일이 발송되었습니다 - ?분' })
+  @ApiActionResponse({ description: '인증 이메일 발송' })
   @CheckBlacklist()
   async sendVerificationEmail(@Body() dto: SendVerificationEmailDto, @ClientInfo() { ip }: ClientInfoData) {
-    return this.verifyEmailService.requestEmailVerification(dto.email, ip);
+    await this.verifyEmailService.requestEmailVerification(dto.email, ip);
   }
 
   @Public()
   @Post('verify-email')
-  @ApiActionResponse({ message: 'verify email success' })
+  @ApiActionResponse({ description: '이메일 인증 성공' })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.verifyEmailService.verifyEmail(dto.email, dto.token);
+    await this.verifyEmailService.verifyEmail(dto.email, dto.token);
   }
 }

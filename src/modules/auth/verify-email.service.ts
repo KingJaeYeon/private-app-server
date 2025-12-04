@@ -43,10 +43,6 @@ export class VerifyEmailService {
 
     // 5. 이메일 발송 (실제로는 이메일 서비스 호출)
     this.sendEmail(email, token);
-
-    return {
-      message: `인증 이메일이 발송되었습니다 - ${this.TOKEN_EXPIRY_MINUTES}분`
-    };
   }
 
   async verifyEmail(email: string, token: string) {
