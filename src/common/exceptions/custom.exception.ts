@@ -1,23 +1,34 @@
 import { HttpException } from '@nestjs/common';
-import { ERROR_CODES, ErrorCode } from './error-code';
+import { ERROR_CODES, ErrorCode, ErrorDefinition } from './error-code';
+
+type ErrorObject = Omit<ErrorDefinition, 'statusCode'>;
 
 export class CustomException extends HttpException {
   public readonly code: string;
 
   constructor(
     errorCode: ErrorCode,
-    public readonly details?: Record<string, any>,
+    public readonly details?: Record<string, any>
   ) {
     const errorDef = ERROR_CODES[errorCode];
+
+    let errorObject: ErrorObject = {
+      code: errorDef.code,
+      message: errorDef.message,
+      category: errorDef.category
+    };
+
+    if (!!errorDef?.serverMessage) {
+      errorObject.serverMessage = errorDef.serverMessage;
+    }
 
     super(
       {
         success: false,
-        code: errorDef.code,
-        message: errorDef.message,
-        details,
+        ...errorObject,
+        details
       },
-      errorDef.statusCode,
+      errorDef.statusCode
     );
 
     this.code = errorDef.code;

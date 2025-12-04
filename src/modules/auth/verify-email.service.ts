@@ -81,7 +81,7 @@ export class VerifyEmailService {
 
     // 5분 내 10번 초과
     if (recentAttempts >= this.MAX_ATTEMPTS_PER_10_MIN) {
-      throw new CustomException('TO_MANY_REQUEST');
+      throw new CustomException('TOO_MANY_REQUESTS');
     }
 
     // 전체 누적 시도 횟수 (블랙리스트 체크용)
@@ -95,7 +95,7 @@ export class VerifyEmailService {
     // 누적 20번 이상 시도 시 블랙리스트 추가
     if (totalAttempts >= this.MAX_ATTEMPTS_BEFORE_BLOCK) {
       await this.addToBlacklist(ip, `과도한 인증 메일 요청 (${totalAttempts}회)`);
-      throw new CustomException('TO_MANY_REQUEST_BLOCK');
+      throw new CustomException('TOO_MANY_REQUEST_BLOCK');
     }
   }
 

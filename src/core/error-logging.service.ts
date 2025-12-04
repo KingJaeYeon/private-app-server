@@ -1,16 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import { PrismaClientKnownRequestError } from '@generated/prisma/internal/prismaNamespace';
-
-interface ErrorResponse {
-  success: false;
-  statusCode: number;
-  code: string;
-  message: string;
-  details?: any;
-  timestamp: string;
-  path: string;
-}
+import { CustomException } from '@/common/exceptions';
+import { ErrorResponse } from '@/common/filters/all-exceptions.filter';
 
 @Injectable()
 export class ErrorLoggingService {
@@ -18,13 +10,13 @@ export class ErrorLoggingService {
   private readonly isDev = process.env.NODE_ENV !== 'production';
 
   log(exception: unknown, request: Request, errorResponse: ErrorResponse) {
-    const { statusCode, code, message } = errorResponse;
+    const { code, message } = errorResponse;
 
     // 로깅용 컨텍스트 생성
     const logContext = this.buildLogContext(exception, request, errorResponse);
 
     // 5xx 에러는 error 레벨, 4xx는 warn 레벨
-    if (statusCode >= 500) {
+    if (errorResponse.category === 'GLOBAL') {
       this.logServerError(exception, code, message, logContext);
     } else {
       this.logClientError(exception, code, message, logContext);
@@ -38,9 +30,22 @@ export class ErrorLoggingService {
       method: request.method,
       statusCode: errorResponse.statusCode,
       userId: (request as any).user?.id,
-      ip: request.ip,
-      userAgent: request.headers['user-agent']
+      ip: this.extractIp(request),
+      userAgent: request.headers['user-agent'],
+      body: this.isDev ? request.body : undefined,
+      query: this.isDev ? request.query : undefined
     };
+
+    // CustomException의 serverMessage 추가 (있는 경우)
+    if (exception instanceof CustomException) {
+      const response = exception.getResponse() as any;
+      if (response.serverMessage) {
+        return {
+          ...baseContext,
+          serverMessage: response.serverMessage // GLOBAL_ERROR_CODES의 serverMessage
+        };
+      }
+    }
 
     // Prisma 에러의 경우 상세 정보 추가
     if (exception instanceof PrismaClientKnownRequestError) {
@@ -48,7 +53,8 @@ export class ErrorLoggingService {
         ...baseContext,
         prismaCode: exception.code,
         prismaMeta: exception.meta,
-        prismaClientVersion: exception.clientVersion
+        prismaClientVersion: exception.clientVersion,
+        serverMessage: errorResponse.serverMessage
       };
     }
 
@@ -72,5 +78,19 @@ export class ErrorLoggingService {
       `[${code}] ${message}\n${JSON.stringify(context, null, 2)}`, // ← 컨텍스트를 메시지에 포함
       exception instanceof Error ? exception.stack : undefined // ← 스택만
     );
+  }
+
+  private extractIp(request: Request): string {
+    const forwarded = request.headers['x-forwarded-for'];
+    if (forwarded) {
+      return typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : forwarded[0];
+    }
+
+    const realIp = request.headers['x-real-ip'];
+    if (realIp && typeof realIp === 'string') {
+      return realIp;
+    }
+
+    return request.socket.remoteAddress || 'unknown';
   }
 }
