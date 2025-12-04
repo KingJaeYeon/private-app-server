@@ -11,7 +11,7 @@ export class SignInDto {
 
   /**
    * 비밀번호 (4자 이상)
-   * @example "password123"
+   * @example "1234"
    */
   @IsString()
   @MinLength(4)

@@ -19,8 +19,24 @@ export class AuthController {
   @Public()
   @ApiActionResponse({
     id: 'userId',
-    message: 'signIn successfully check cookies',
-    description: '로그인 성공. **Access Token**과 **Refresh Token** 쿠키가 응답 헤더에 설정됩니다.'
+    message: 'signIn successfully.',
+    description: '로그인 성공. **Access Token**과 **Refresh Token** 쿠키가 응답 헤더에 설정됩니다.',
+    headers: {
+      'Set-Cookie-Access-Token': {
+        description: '인증에 사용되는 Access Token (HttpOnly, 짧은 만료 시간)',
+        schema: {
+          type: 'string',
+          example: 'access_token=jwt.access.token; HttpOnly; Secure; Path=/'
+        }
+      },
+      'Set-Cookie-Refresh-Token': {
+        description: '토큰 갱신에 사용되는 Refresh Token (HttpOnly)',
+        schema: {
+          type: 'string',
+          example: 'refresh_token=jwt.refresh.token; HttpOnly; Secure; Path=/auth'
+        }
+      }
+    }
   })
   @Post('sign-in')
   async signIn(
@@ -38,12 +54,32 @@ export class AuthController {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
 
     await this.authService.setSignInAuthCookies(res, token, refreshToken);
-    return { id };
+    return { id, message: 'signIn successfully.' };
   }
 
   @Public()
   @Post('sign-up')
-  @ApiActionResponse({ id: 'userId', description: '회원가입 성공' })
+  @ApiActionResponse({
+    id: 'userId',
+    message: 'signUp successfully.',
+    description: '회원가입 성공',
+    headers: {
+      'Set-Cookie-Access-Token': {
+        description: '인증에 사용되는 Access Token (HttpOnly, 짧은 만료 시간)',
+        schema: {
+          type: 'string',
+          example: 'access_token=jwt.access.token; HttpOnly; Secure; Path=/'
+        }
+      },
+      'Set-Cookie-Refresh-Token': {
+        description: '토큰 갱신에 사용되는 Refresh Token (HttpOnly)',
+        schema: {
+          type: 'string',
+          example: 'refresh_token=jwt.refresh.token; HttpOnly; Secure; Path=/auth'
+        }
+      }
+    }
+  })
   async signup(
     @Req() req: Request,
     @Body() dto: SignUpDto,
@@ -58,11 +94,14 @@ export class AuthController {
     });
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
     await this.authService.setSignInAuthCookies(res, token, refreshToken);
-    return { id };
+    return { id, message: 'signUp successfully.' };
   }
 
   @Post('refresh')
-  @ApiActionResponse({ description: '리프레시 토큰 재발급' })
+  @ApiActionResponse({
+    description: '리프레시 토큰 재발급',
+    message: 'refresh token successfully.'
+  })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response, @ClientInfo() info: ClientInfoData) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
     if (!refreshToken) {
@@ -71,13 +110,18 @@ export class AuthController {
 
     const token = await this.authService.rotateRefreshToken(refreshToken, info.ip, info.userAgent);
     this.authService.setAuthCookies(res, token);
+    return { message: 'refresh token successfully.' };
   }
 
   @Post('logout')
-  @ApiActionResponse({ description: '로그아웃 성공 - 쿠키제거' })
+  @ApiActionResponse({
+    description: '로그아웃 성공 - 쿠키제거',
+    message: 'logout successfully.'
+  })
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
     await this.authService.clearAuthCookies(res, refreshToken);
+    return { message: 'logout successfully.' };
   }
 
   @Public()
