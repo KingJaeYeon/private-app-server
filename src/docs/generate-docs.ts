@@ -1,21 +1,21 @@
 import * as fs from 'fs';
-import { ERROR_CODES, ErrorDefinition } from '@/common/exceptions/error-code';
+import { ERROR_CODES, IErrorDefinition } from '@/common/exceptions/error-code';
 import { join } from 'node:path';
 import process from 'node:process';
 import { readFileSync } from 'node:fs';
 import * as yaml from 'js-yaml';
-import { ConfigKey } from '@/config/config.interface';
+import { IConfigKey } from '@/config/config.interface';
 import { AUTH_COOKIE } from '@/common/constants/auth'; // ERROR_CODES 타입 임포트
 
 const YAML_CONFIG_FILENAME = `./src/config/${process.env.NODE_ENV}.yaml`;
 
-const config = (): ConfigKey => {
+const config = (): IConfigKey => {
   const file = readFileSync(join(__dirname, YAML_CONFIG_FILENAME), 'utf8');
-  return yaml.load(file) as ConfigKey;
+  return yaml.load(file) as IConfigKey;
 };
 
 type CategoryGrouped = {
-  [category: string]: { [code: string]: ErrorDefinition };
+  [category: string]: { [code: string]: IErrorDefinition };
 };
 
 // ERROR_CODES를 category 기준으로 그룹화
@@ -32,7 +32,7 @@ function groupByCategory(errors: typeof ERROR_CODES): CategoryGrouped {
 }
 
 // Markdown 테이블 생성
-function createMarkdownTable(errors: { [code: string]: ErrorDefinition }, includeServerMessage: boolean): string {
+function createMarkdownTable(errors: { [code: string]: IErrorDefinition }, includeServerMessage: boolean): string {
   const header = includeServerMessage
     ? `| Code | HTTP Status | Message | serverMessage |`
     : `| Code | HTTP Status | Message |`;

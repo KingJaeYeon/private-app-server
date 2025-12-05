@@ -2,14 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import { PrismaClientKnownRequestError } from '@generated/prisma/internal/prismaNamespace';
 import { CustomException } from '@/common/exceptions';
-import { ErrorResponse } from '@/common/filters/all-exceptions.filter';
+import { RequestUtil } from '@/common/util/request.util';
+import { IErrorResponse } from '@/common/filters/all-exceptions.filter';
 
 @Injectable()
 export class ErrorLoggingService {
   private readonly logger = new Logger(ErrorLoggingService.name);
   private readonly isDev = process.env.NODE_ENV !== 'production';
 
-  log(exception: unknown, request: Request, errorResponse: ErrorResponse) {
+  log(exception: unknown, request: Request, errorResponse: IErrorResponse) {
     const { code, message } = errorResponse;
 
     // 로깅용 컨텍스트 생성
@@ -23,7 +24,7 @@ export class ErrorLoggingService {
     }
   }
 
-  private buildLogContext(exception: unknown, request: Request, errorResponse: ErrorResponse) {
+  private buildLogContext(exception: unknown, request: Request, errorResponse: IErrorResponse) {
     const baseContext = {
       code: errorResponse.code,
       path: request.url,
@@ -81,16 +82,6 @@ export class ErrorLoggingService {
   }
 
   private extractIp(request: Request): string {
-    const forwarded = request.headers['x-forwarded-for'];
-    if (forwarded) {
-      return typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : forwarded[0];
-    }
-
-    const realIp = request.headers['x-real-ip'];
-    if (realIp && typeof realIp === 'string') {
-      return realIp;
-    }
-
-    return request.socket.remoteAddress || 'unknown';
+    return RequestUtil.extractIp(request);
   }
 }

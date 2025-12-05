@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ConfigKey, JWTConfig } from '@/config/config.interface';
+import { IConfigKey, IJWTConfig } from '@/config/config.interface';
 import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
 import { VerifyEmailService } from '@/modules/auth/verify-email.service';
 
@@ -13,8 +13,8 @@ import { VerifyEmailService } from '@/modules/auth/verify-email.service';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService<ConfigKey>) => {
-        const jwt: JWTConfig = configService.getOrThrow('jwt');
+      useFactory: async (configService: ConfigService<IConfigKey>) => {
+        const jwt: IJWTConfig = configService.getOrThrow('jwt');
         return {
           secret: jwt.secret,
           signOptions: {

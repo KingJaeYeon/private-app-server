@@ -6,7 +6,7 @@ import { SendVerificationEmailDto, SignInDto, SignUpDto, VerifyEmailDto } from '
 import { VerifyEmailService } from '@/modules/auth/verify-email.service';
 import { AUTH_COOKIE } from '@/common/constants/auth';
 import { CustomException } from '@/common/exceptions';
-import { type ClientInfoData } from '@/common/decorators/client-info.decorator';
+import { type IClientInfoData } from '@/common/decorators/client-info.decorator';
 import { ApiActionResponse } from '@/common/decorators/api-action-response.decorator';
 import { ApiErrorResponses } from '@/common/decorators/api-error-response.decorator';
 
@@ -45,7 +45,7 @@ export class AuthController {
     @Req() req: Request,
     @Body() dto: SignInDto,
     @Res({ passthrough: true }) res: Response,
-    @ClientInfo() info: ClientInfoData
+    @ClientInfo() info: IClientInfoData
   ) {
     const { id, email } = await this.authService.validateUser(dto.identifier, dto.password);
     const token = await this.authService.generateJwtTokens({
@@ -82,12 +82,12 @@ export class AuthController {
       }
     }
   })
-  @ApiErrorResponses(['EMAIL_ALREADY_EXISTS','VERIFICATION_INVALID'])
+  @ApiErrorResponses(['EMAIL_ALREADY_EXISTS', 'VERIFICATION_INVALID'])
   async signup(
     @Req() req: Request,
     @Body() dto: SignUpDto,
     @Res({ passthrough: true }) res: Response,
-    @ClientInfo() info: ClientInfoData
+    @ClientInfo() info: IClientInfoData
   ) {
     const { id, email } = await this.authService.signUp(dto);
     const token = await this.authService.generateJwtTokens({
@@ -105,7 +105,7 @@ export class AuthController {
     description: '리프레시 토큰 재발급',
     message: 'refresh token successfully.'
   })
-  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response, @ClientInfo() info: ClientInfoData) {
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response, @ClientInfo() info: IClientInfoData) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
     if (!refreshToken) {
       throw new CustomException('FORBIDDEN');
@@ -131,7 +131,7 @@ export class AuthController {
   @Post('send-verification-email')
   @ApiActionResponse({ description: '인증 이메일 발송' })
   @CheckBlacklist()
-  async sendVerificationEmail(@Body() dto: SendVerificationEmailDto, @ClientInfo() { ip }: ClientInfoData) {
+  async sendVerificationEmail(@Body() dto: SendVerificationEmailDto, @ClientInfo() { ip }: IClientInfoData) {
     await this.verifyEmailService.requestEmailVerification(dto.email, ip);
   }
 

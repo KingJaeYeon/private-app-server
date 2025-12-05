@@ -4,17 +4,17 @@ import { map } from 'rxjs/operators';
 import { Reflector } from '@nestjs/core';
 import { SKIP_RESPONSE_TRANSFORM } from '@/common/decorators';
 
-interface SuccessResponse<T> {
+interface ISuccessResponse<T> {
   success: true;
   data?: T;
   timestamp: string;
 }
 
 @Injectable()
-export class ResponseInterceptor<T> implements NestInterceptor<T, SuccessResponse<T> | T> {
+export class ResponseInterceptor<T> implements NestInterceptor<T, ISuccessResponse<T> | T> {
   constructor(private reflector: Reflector) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<SuccessResponse<T> | T> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<ISuccessResponse<T> | T> {
     const contextType = context.getType(); // 프로토콜 타입 체크
     if (contextType !== 'http') {
       return next.handle(); // SSE, WS는 스킵
@@ -37,7 +37,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, SuccessRespons
           return data;
         }
 
-        const responseBody: SuccessResponse<T> = {
+        const responseBody: ISuccessResponse<T> = {
           success: true,
           timestamp: new Date().toISOString()
         };

@@ -4,6 +4,7 @@ import { PrismaService } from '@/core/prisma.service';
 import { Request } from 'express';
 import { CHECK_BLACKLIST_KEY } from '@/common/decorators';
 import { CustomException } from '@/common/exceptions';
+import { RequestUtil } from '@/common/util/request.util';
 
 @Injectable()
 export class BlacklistGuard implements CanActivate {
@@ -81,21 +82,7 @@ export class BlacklistGuard implements CanActivate {
    * IP 추출 (프록시 고려)
    */
   private extractIp(request: Request): string {
-    // x-forwarded-for 헤더 (프록시/로드밸런서 뒤에 있을 때)
-    const forwarded = request.headers['x-forwarded-for'];
-    if (forwarded) {
-      const ip = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : forwarded[0];
-      return ip;
-    }
-
-    // x-real-ip 헤더 (일부 프록시 사용)
-    const realIp = request.headers['x-real-ip'];
-    if (realIp && typeof realIp === 'string') {
-      return realIp;
-    }
-
-    // 직접 연결
-    return request.socket.remoteAddress || 'unknown';
+    return RequestUtil.extractIp(request);
   }
 
   /**

@@ -4,14 +4,13 @@ import { CustomException } from '@/common/exceptions';
 import * as bcrypt from 'bcrypt';
 import { User } from '@generated/prisma/client';
 import { JwtService } from '@nestjs/jwt';
-import { JwtPayload } from '@/modules/auth/strategies/jwt.strategy';
+import { IJwtPayload } from '@/modules/auth/strategies/jwt.strategy';
 import { add } from 'date-fns';
 import type { Response } from 'express';
 import { CookieOptions } from 'express';
-import { AppConfig, ConfigKey } from '@/config/config.interface';
+import { IAppConfig, IConfigKey } from '@/config/config.interface';
 import { ConfigService } from '@nestjs/config';
 import { SignUpDto } from '@/modules/auth/dto';
-import { getRandomString } from '@/common/util/util';
 import { AUTH_COOKIE } from '@/common/constants/auth';
 
 @Injectable()
@@ -19,7 +18,7 @@ export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly db: PrismaService,
-    private readonly configService: ConfigService<ConfigKey>
+    private readonly configService: ConfigService<IConfigKey>
   ) {}
 
   async validateUser(identifier: string, password: string): Promise<User> {
@@ -83,7 +82,7 @@ export class AuthService {
     ipAddress,
     userAgent
   }: {
-    payload: JwtPayload;
+    payload: IJwtPayload;
     userAgent: string;
     ipAddress: string;
   }) {
@@ -171,7 +170,7 @@ export class AuthService {
       data: { revokedAt: new Date() }
     });
 
-    const payload: JwtPayload = {
+    const payload: IJwtPayload = {
       email: storedToken.user.email,
       userId: storedToken.userId
     };
@@ -200,7 +199,7 @@ export class AuthService {
   }
 
   private getCookieBaseOptions(): CookieOptions {
-    const { domain } = this.configService.getOrThrow<AppConfig>('app');
+    const { domain } = this.configService.getOrThrow<IAppConfig>('app');
     const isProduction = process.env.NODE_ENV === 'production';
 
     return {

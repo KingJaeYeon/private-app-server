@@ -1,20 +1,20 @@
-export interface ConfigKey {
-  db: DbConfig;
-  app: AppConfig;
-  jwt: JWTConfig;
+export interface IConfigKey {
+  db: IDbConfig;
+  app: IAppConfig;
+  jwt: IJWTConfig;
 }
 
-export interface DbConfig {
+export interface IDbConfig {
   postgresql: string;
   schema: string;
 }
 
-export interface JWTConfig {
+export interface IJWTConfig {
   secret: string;
   expiresIn: number;
 }
 
-export interface AppConfig {
+export interface IAppConfig {
   port: number;
   front: string;
   domain: string;

@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
-import { ERROR_CODES, ErrorCode, ErrorDefinition } from './error-code';
+import { ERROR_CODES, ErrorCode, IErrorDefinition } from './error-code';
 
-type ErrorObject = Omit<ErrorDefinition, 'statusCode'>;
+type ErrorObject = Omit<IErrorDefinition, 'statusCode'>;
 
 export class CustomException extends HttpException {
   public readonly code: string;

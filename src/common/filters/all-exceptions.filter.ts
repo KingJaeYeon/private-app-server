@@ -6,7 +6,7 @@ import { ErrorLoggingService } from '@/core/error-logging.service';
 import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@generated/prisma/internal/prismaNamespace';
 import { GLOBAL_ERROR_CODES } from '@/common/exceptions/error-code';
 
-export interface ErrorResponse {
+export interface IErrorResponse {
   success: false;
   statusCode: number;
   code: string;
@@ -37,7 +37,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(safeResponse.statusCode).json(safeResponse);
   }
 
-  private buildErrorResponse(exception: unknown, request: Request): ErrorResponse {
+  private buildErrorResponse(exception: unknown, request: Request): IErrorResponse {
     const base = this.createBaseError(request);
 
     if (exception instanceof CustomException) {
@@ -124,8 +124,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private handlePrismaError(
     exception: PrismaClientKnownRequestError,
-    base: Pick<ErrorResponse, 'success' | 'timestamp' | 'path'>
-  ): ErrorResponse {
+    base: Pick<IErrorResponse, 'success' | 'timestamp' | 'path'>
+  ): IErrorResponse {
     switch (exception.code) {
       // Unique constraint violation
       case 'P2002': {
@@ -200,7 +200,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
   }
 
-  private createBaseError(request: Request): Pick<ErrorResponse, 'success' | 'timestamp' | 'path'> {
+  private createBaseError(request: Request): Pick<IErrorResponse, 'success' | 'timestamp' | 'path'> {
     return {
       success: false,
       timestamp: new Date().toISOString(),

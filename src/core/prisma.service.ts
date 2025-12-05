@@ -2,14 +2,14 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { ConfigService } from '@nestjs/config';
-import { ConfigKey, DbConfig } from '@/config/config.interface';
+import { IConfigKey, IDbConfig } from '@/config/config.interface';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
 
-  constructor(configService: ConfigService<ConfigKey>) {
-    const dbConfig: DbConfig = configService.getOrThrow('db');
+  constructor(configService: ConfigService<IConfigKey>) {
+    const dbConfig: IDbConfig = configService.getOrThrow('db');
 
     const pool = new PrismaPg({ connectionString: dbConfig.postgresql }, { schema: dbConfig.schema });
     super({

@@ -7,7 +7,7 @@ import cookieParser from 'cookie-parser';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'body-parser';
 import { ConfigService } from '@nestjs/config';
-import { AppConfig, ConfigKey } from '@/config/config.interface';
+import { IAppConfig, IConfigKey } from '@/config/config.interface';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AUTH_COOKIE } from '@/common/constants/auth';
 import { readFileSync } from 'node:fs';
@@ -27,8 +27,8 @@ async function bootstrap() {
   app.use(json({ limit: '5mb' }));
   app.use(urlencoded({ limit: '5mb', extended: true }));
 
-  const config = app.get(ConfigService<ConfigKey>);
-  const appConfig = config.getOrThrow<AppConfig>('app');
+  const config = app.get(ConfigService<IConfigKey>);
+  const appConfig = config.getOrThrow<IAppConfig>('app');
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Private App API')
