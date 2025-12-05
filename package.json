@@ -18,7 +18,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prisma:dev-generate": "cross-env NODE_ENV=development prisma generate",
+    "prisma:generate": "cross-env NODE_ENV=development prisma generate",
+    "prisma:help": "cross-env NODE_ENV=development prisma",
+    "prisma:migrate": "cross-env NODE_ENV=development prisma migrate dev --name",
     "swagger:docs": "cross-env NODE_ENV=development tsx src/docs/generate-docs.ts"
   },
   "dependencies": {

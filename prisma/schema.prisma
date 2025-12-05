@@ -36,6 +36,7 @@ model User {
   refreshToken RefreshToken[]
   reference    Reference[]
   tagRelation  TagRelation[]
+  prompt       Prompt[]
 
   @@map("users")
 }
@@ -118,6 +119,7 @@ model Tag {
   @@map("tags")
 }
 
+// YouTube 채널
 model Channel {
   id        Int    @id @default(autoincrement())
   channelId String @unique @map("channel_id")
@@ -160,6 +162,7 @@ model ChannelHistory {
   @@map("channel_histories")
 }
 
+// 사이트 북마크
 model Reference {
   id          Int      @id @default(autoincrement())
   userId      String   @map("user_id") // Clerk userId
@@ -173,6 +176,22 @@ model Reference {
 
   @@index([userId])
   @@map("references")
+}
+
+// 프롬프트
+model Prompt {
+  id          Int      @id @default(autoincrement())
+  userId      String   @map("user_id") // Clerk userId
+  title       String
+  prompt      String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("prompts")
 }
 
 // 폴리모픽 태그 관계 (중간 테이블)
