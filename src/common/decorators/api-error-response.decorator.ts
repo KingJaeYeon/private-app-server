@@ -14,7 +14,6 @@ export function ApiErrorResponses(errorCodes: ErrorCode[]) {
 
     return ApiResponse({
       status: errorDef.statusCode,
-      description: errorDef.message,
       schema: {
         type: 'object',
         properties: {

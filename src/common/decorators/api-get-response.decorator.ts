@@ -1,20 +1,21 @@
 import { applyDecorators, Type } from '@nestjs/common';
-import { ApiExtraModels, ApiOkResponse, getSchemaPath } from '@nestjs/swagger';
+import { ApiExtraModels, ApiOkResponse, ApiOperation, ApiOperationOptions, getSchemaPath } from '@nestjs/swagger';
 
 type Options<T> = {
   type: Type<T>;
   isArray?: boolean;
   description?: string;
+  operations: ApiOperationOptions;
 };
 
 /**
  * @param options swagger get 요청에 대한 responseDto class
  * @example
- * ApiSuccessResponse({ type: UserProfileDto, description: 'description' })
- * ApiSuccessResponse({ type: UserDto, isArray: true, description: '유저 목록' })
+ * ApiGetResponse({ type: UserProfileDto, description: 'description' })
+ * ApiGetResponse({ type: UserDto, isArray: true, description: '유저 목록' })
  */
-export function ApiSuccessResponse<T>(options: Options<T>) {
-  const { description, type, isArray = false } = options ?? {};
+export function ApiGetResponse<T>(options: Options<T>) {
+  const { description, type, isArray = false, operations } = options ?? {};
 
   const dataSchema = isArray
     ? {
@@ -24,6 +25,7 @@ export function ApiSuccessResponse<T>(options: Options<T>) {
     : { $ref: getSchemaPath(type) };
 
   return applyDecorators(
+    ApiOperation(operations),
     ApiOkResponse({
       schema: {
         description,

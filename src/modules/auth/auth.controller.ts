@@ -21,7 +21,6 @@ export class AuthController {
   @ApiActionResponse({
     id: 'userId',
     message: 'signIn successfully.',
-    description: '로그인 성공. **Access Token**과 **Refresh Token** 쿠키가 응답 헤더에 설정됩니다.',
     headers: {
       'Set-Cookie-Access-Token': {
         description: '인증에 사용되는 Access Token (HttpOnly, 짧은 만료 시간)',
@@ -37,7 +36,8 @@ export class AuthController {
           example: 'refresh_token=jwt.refresh.token; HttpOnly; Secure; Path=/auth'
         }
       }
-    }
+    },
+    operations: { summary: '로그인' ,description:' **Access Token**과 **Refresh Token** 쿠키가 응답 헤더에 설정됩니다' }
   })
   @ApiErrorResponses(['INVALID_CREDENTIALS'])
   @Post('sign-in')
@@ -80,7 +80,8 @@ export class AuthController {
           example: 'refresh_token=jwt.refresh.token; HttpOnly; Secure; Path=/auth'
         }
       }
-    }
+    },
+    operations: {}
   })
   @ApiErrorResponses(['EMAIL_ALREADY_EXISTS', 'VERIFICATION_INVALID'])
   async signup(
@@ -103,7 +104,8 @@ export class AuthController {
   @Post('refresh')
   @ApiActionResponse({
     description: '리프레시 토큰 재발급',
-    message: 'refresh token successfully.'
+    message: 'refresh token successfully.',
+    operations: {}
   })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response, @ClientInfo() info: IClientInfoData) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
@@ -119,7 +121,8 @@ export class AuthController {
   @Post('logout')
   @ApiActionResponse({
     description: '로그아웃 성공 - 쿠키제거',
-    message: 'logout successfully.'
+    message: 'logout successfully.',
+    operations: {}
   })
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
@@ -129,7 +132,7 @@ export class AuthController {
 
   @Public()
   @Post('send-verification-email')
-  @ApiActionResponse({ description: '인증 이메일 발송' })
+  @ApiActionResponse({ description: '인증 이메일 발송', operations: {} })
   @CheckBlacklist()
   async sendVerificationEmail(@Body() dto: SendVerificationEmailDto, @ClientInfo() { ip }: IClientInfoData) {
     await this.verifyEmailService.requestEmailVerification(dto.email, ip);
@@ -137,7 +140,7 @@ export class AuthController {
 
   @Public()
   @Post('verify-email')
-  @ApiActionResponse({ description: '이메일 인증 성공' })
+  @ApiActionResponse({ description: '이메일 인증 성공', operations: {} })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     await this.verifyEmailService.verifyEmail(dto.email, dto.token);
   }

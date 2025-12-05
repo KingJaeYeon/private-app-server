@@ -1,5 +1,5 @@
 import { applyDecorators, HttpStatus, Type } from '@nestjs/common';
-import { ApiResponseOptions, getSchemaPath, ApiResponse } from '@nestjs/swagger';
+import { ApiResponseOptions, getSchemaPath, ApiResponse, ApiOperation, ApiOperationOptions } from '@nestjs/swagger';
 
 type ResponseType<T> = { type: Type<T>; isArray?: false } | { type: Type<T>; isArray: true };
 
@@ -10,6 +10,7 @@ type Options<T> = {
   status?: HttpStatus;
   description?: string;
   headers?: ApiResponseOptions['headers'];
+  operations: ApiOperationOptions;
 };
 
 /** swagger get을 제외한 요청
@@ -19,7 +20,7 @@ type Options<T> = {
  * ApiActionResponse({ id: 1, message: 'deleted' })
  */
 export function ApiActionResponse<T>(options: Options<T>) {
-  const { id, message, status = 201, description, headers, responseType } = options ?? {};
+  const { id, message, status = 201, description, headers, responseType, operations } = options ?? {};
 
   const schema: Record<string, any> = {
     properties: {
@@ -70,6 +71,7 @@ export function ApiActionResponse<T>(options: Options<T>) {
   }
 
   return applyDecorators(
+    ApiOperation(operations),
     ApiResponse({
       headers,
       status,
