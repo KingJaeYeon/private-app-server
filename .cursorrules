@@ -1,0 +1,533 @@
+# Cursor Rules for Private App Server
+
+## Project Overview
+This is a NestJS 11.x backend application using TypeScript 5.7, PostgreSQL with Prisma ORM, and JWT authentication. The project follows a feature-based modular architecture with strict type safety and standardized error handling.
+
+## CRITICAL RULES - MUST FOLLOW
+
+### 1. Interface Naming Convention
+- **ALWAYS** prefix all interfaces with `I` (capital I)
+- **NEVER** create interfaces without the `I` prefix
+- **Examples**: `IErrorResponse`, `IConfigKey`, `IJwtPayload`, `IClientInfoData`
+- **Exception**: Type aliases do NOT use the `I` prefix (e.g., `ErrorCode`, `ErrorDefinition`)
+
+### 2. Database Naming Convention
+- **ALWAYS** use `snake_case` for table names and column names in Prisma schema
+- **NEVER** use `camelCase` or `PascalCase` for database entities
+- **Reason**: AWS RDS migration constraints and database case-insensitivity consistency
+- **Example**: `email_verified`, `created_at`, `user_id`, `refresh_tokens`
+
+### 3. Error Handling
+- **ALWAYS** use `CustomException` for business logic errors
+- **ALWAYS** use error codes from `ERROR_CODES` (never hardcode error messages)
+- **NEVER** throw raw `Error` or `HttpException` directly
+- **NEVER** expose server-side error details to clients (use `serverMessage` for logging only)
+- **Pattern**: `throw new CustomException('USER_NOT_FOUND', { userId: '123' })`
+
+### 4. Response Format Standardization
+- **ALWAYS** return standardized response format:
+  - Success: `{ success: true, data?: T, timestamp: string }`
+  - Error: `{ success: false, statusCode: number, code: string, message: string, details?: any, timestamp: string, path: string }`
+- **NEVER** return raw data without the standard wrapper (unless using `@SkipResponseTransform()`)
+- **NEVER** include `serverMessage` in client responses
+
+### 5. Dependency Injection
+- **ALWAYS** use constructor injection
+- **ALWAYS** mark dependencies as `private readonly`
+- **NEVER** use property injection or service locator pattern
+- **Pattern**: 
+  ```typescript
+  constructor(
+    private readonly db: PrismaService,
+    private readonly configService: ConfigService<IConfigKey>
+  ) {}
+  ```
+
+### 6. File Naming Convention
+- **ALWAYS** follow these suffixes:
+  - Controllers: `*.controller.ts`
+  - Services: `*.service.ts`
+  - Modules: `*.module.ts`
+  - Guards: `*.guard.ts`
+  - Decorators: `*.decorator.ts`
+  - DTOs: `*.dto.ts`
+  - Strategies: `*.strategy.ts`
+  - Utilities: `*.util.ts`
+  - Tests: `*.spec.ts`
+
+### 7. Polymorphic Relations (TagRelation)
+- **ALWAYS** use batch queries with `{ in: [...] }` to avoid N+1 problems
+- **NEVER** query TagRelation inside loops
+- **ALWAYS** use `Promise.all()` for parallel queries when fetching multiple types
+- **ALWAYS** leverage existing indexes: `[userId, taggableType]`, `[tagId, taggableType]`, `[taggableType, taggableId]`
+- **Pattern**: 
+  ```typescript
+  // ✅ CORRECT: Batch query
+  const relations = await db.tagRelation.findMany({
+    where: { taggableId: { in: [1, 2, 3] } }
+  });
+  
+  // ❌ WRONG: N+1 problem
+  for (const item of items) {
+    const tags = await db.tagRelation.findMany({ where: { taggableId: item.id } });
+  }
+  ```
+
+### 8. Response DTO and Prisma Types
+- **ALWAYS** check if Prisma generated types exist in `@generated/prisma/client` before creating DTOs
+- **ALWAYS** use TypeScript utility types (`Omit`, `Pick`, `Partial`, etc.) to derive DTOs from Prisma types when the structure is similar
+- **ALWAYS** use `implements` keyword to ensure DTOs match Prisma types (type safety)
+- **ALWAYS** convert `BigInt` fields to `string` in response DTOs (JSON serialization)
+- **Pattern**:
+  ```typescript
+  // ✅ CORRECT: Prisma 타입 기반 DTO
+  import { Channel } from '@generated/prisma/client';
+  
+  type ChannelWithStringViewCount = Omit<Channel, 'viewCount'> & {
+    viewCount: string;
+  };
+  
+  export class ChannelResponseDto implements ChannelWithStringViewCount {
+    // Swagger 문서화를 위해 @ApiProperty 필요
+    @ApiProperty()
+    id: number;
+    // ... 모든 필드
+  }
+  
+  // ✅ CORRECT: Pick을 사용한 부분 타입
+  export class ChannelTagDto implements Pick<Tag, 'id' | 'name' | 'slug'> {
+    @ApiProperty()
+    id: number;
+    // ...
+  }
+  
+  // ❌ WRONG: Prisma 타입을 무시하고 새로 정의
+  export class ChannelResponseDto {
+    id: number;
+    // Prisma와 동일한 구조인데 새로 정의
+  }
+  ```
+- **When to use Prisma types**:
+  - Response DTO가 Prisma 모델과 거의 동일한 구조일 때
+  - 필드 추가/제거가 최소한일 때 (예: BigInt → string 변환만)
+  - 타입 안전성을 보장하고 싶을 때
+- **When NOT to use Prisma types**:
+  - Response DTO가 여러 모델을 조합하거나 변환할 때
+  - 클라이언트에 노출할 필드가 크게 다를 때
+  - 계산된 필드나 변환된 데이터가 많을 때
+
+## CRITICAL RULES - MUST NOT DO
+
+### 1. Type Safety Violations
+- **NEVER** use `any` type unless absolutely necessary (ESLint allows it, but minimize usage)
+- **NEVER** use type assertions (`as any`) without proper type guards
+- **ALWAYS** use proper TypeScript types and interfaces
+
+### 2. Database Query Anti-patterns
+- **NEVER** perform database queries inside loops (N+1 problem)
+- **NEVER** use raw SQL unless absolutely necessary (maintainability nightmare)
+- **NEVER** fetch unnecessary data (use `select` to limit fields)
+- **ALWAYS** use transactions for multi-step operations that must be atomic
+
+### 3. Security Violations
+- **NEVER** expose sensitive information in error messages to clients
+- **NEVER** log passwords, tokens, or sensitive user data
+- **NEVER** disable security headers (Helmet) in production
+- **NEVER** use `console.log` for production logging (use Logger service)
+- **ALWAYS** validate and sanitize all user inputs
+
+### 4. Code Duplication
+- **NEVER** duplicate IP extraction logic (use `RequestUtil.extractIp()`)
+- **NEVER** duplicate error handling logic
+- **ALWAYS** extract common functionality to utility classes or services
+
+### 5. Module Structure Violations
+- **NEVER** create circular dependencies between modules
+- **NEVER** import modules that aren't needed
+- **ALWAYS** follow feature-based module structure
+- **ALWAYS** export only what other modules need
+
+## Code Style and Conventions
+
+### Naming Conventions
+- **Classes**: PascalCase (`AuthService`, `CustomException`)
+- **Interfaces**: `I` + PascalCase (`IErrorResponse`, `IConfigKey`)
+- **Variables/Functions**: camelCase (`errorResponse`, `buildErrorResponse`)
+- **Constants**: UPPER_SNAKE_CASE (`ERROR_CODES`, `AUTH_COOKIE`)
+- **Boolean variables**: Prefix with `is`, `has`, or `should` (`isBlacklisted`, `hasPermission`)
+- **Private members**: `private readonly` with camelCase
+
+### Import Order
+1. NestJS official modules
+2. External libraries
+3. Project internal modules (using `@/` path alias)
+4. Relative paths
+5. Type-only imports: `import type { ... }` or `import { type ... }`
+
+### Path Aliases
+- **ALWAYS** use `@/*` for `src/*` imports
+- **ALWAYS** use `@generated/*` for `src/generated/*` imports
+- **NEVER** use relative paths for cross-module imports
+
+### Comments and Documentation
+- **ALWAYS** write comments in Korean for business logic
+- **ALWAYS** use JSDoc for public APIs
+- **ALWAYS** mark incomplete features with `// TODO:` comments
+- **ALWAYS** document complex logic with inline comments
+
+### Prettier Configuration
+- Semicolons: Required
+- Trailing commas: None
+- Quotes: Single quotes
+- Line width: 120 characters
+- Tab width: 2 spaces
+- End of line: Auto (OS-specific)
+
+## Architecture Patterns
+
+### Module Structure
+- **ALWAYS** follow feature-based module structure:
+  ```
+  modules/{feature}/
+  ├── {feature}.controller.ts
+  ├── {feature}.service.ts
+  ├── {feature}.module.ts
+  ├── dto/
+  └── (optional: guards/, strategies/, *.service.ts)
+  ```
+
+### Service Layer
+- **ALWAYS** keep controllers thin (delegate to services)
+- **ALWAYS** keep services focused on single responsibility
+- **NEVER** put business logic in controllers
+- **ALWAYS** use `@Injectable()` decorator for services
+
+### Pagination for List Endpoints
+- **ALWAYS** implement pagination for GET endpoints that return arrays
+- **ALWAYS** accept `page` (default: 1) and `limit` (default: 20, max: 50) query parameters
+- **ALWAYS** return paginated response with metadata (total, page, limit, hasMore)
+- **ALWAYS** use Prisma's `skip` and `take` for database queries
+- **ALWAYS** use `Promise.all()` to fetch data and count in parallel
+- **Pattern**:
+  ```typescript
+  // Controller
+  @Get()
+  async getList(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number
+  ) {
+    return this.service.getList(page, limit);
+  }
+  
+  // Service
+  async getList(page: number, limit: number) {
+    const maxLimit = Math.min(limit, 50);
+    const skip = (page - 1) * maxLimit;
+    
+    const [items, total] = await Promise.all([
+      this.db.model.findMany({ skip, take: maxLimit }),
+      this.db.model.count()
+    ]);
+    
+    return {
+      items,
+      pagination: { total, page, limit: maxLimit, hasMore: skip + maxLimit < total }
+    };
+  }
+  ```
+
+### Error Response Building
+- **ALWAYS** use `AllExceptionsFilter` for error transformation
+- **ALWAYS** separate server messages (logging) from client messages
+- **ALWAYS** include `timestamp` and `path` in error responses
+- **NEVER** expose stack traces to clients
+
+### Authentication & Authorization
+- **ALWAYS** use `@Public()` decorator for public endpoints
+- **ALWAYS** use `@CurrentUser()` decorator to extract user from request
+- **ALWAYS** use `@ClientInfo()` decorator to extract IP and User-Agent
+- **ALWAYS** validate JWT tokens through `JwtAuthGuard`
+- **NEVER** bypass authentication guards without `@Public()` decorator
+
+## Prisma Best Practices
+
+### Query Optimization
+- **ALWAYS** use batch queries (`{ in: [...] }`) for multiple IDs
+- **ALWAYS** use `select` to limit returned fields when possible
+- **ALWAYS** leverage database indexes (check schema for existing indexes)
+- **ALWAYS** use `Promise.all()` for independent parallel queries
+- **NEVER** use `include` unnecessarily (fetch only what you need)
+
+### Pagination
+- **ALWAYS** implement pagination for list endpoints (GET requests that return arrays)
+- **ALWAYS** use `page` and `limit` query parameters
+- **ALWAYS** set maximum limit to 50 items per request
+- **ALWAYS** return pagination metadata in response (total, page, limit, hasMore)
+- **ALWAYS** use Prisma's `skip` and `take` for pagination
+- **Pattern**:
+  ```typescript
+  // ✅ CORRECT: 페이지네이션 적용
+  async getList(page: number = 1, limit: number = 20) {
+    const maxLimit = Math.min(limit, 50); // 최대 50개
+    const skip = (page - 1) * maxLimit;
+    
+    const [items, total] = await Promise.all([
+      this.db.model.findMany({
+        skip,
+        take: maxLimit,
+        orderBy: { createdAt: 'desc' }
+      }),
+      this.db.model.count()
+    ]);
+    
+    return {
+      items,
+      pagination: {
+        total,
+        page,
+        limit: maxLimit,
+        hasMore: skip + maxLimit < total
+      }
+    };
+  }
+  
+  // ❌ WRONG: 페이지네이션 없이 모든 데이터 반환
+  async getList() {
+    return this.db.model.findMany(); // 모든 데이터 반환
+  }
+  ```
+- **Response DTO Pattern**:
+  ```typescript
+  export class PaginatedResponseDto<T> {
+    /**
+     * 데이터 목록
+     */
+    items: T[];
+    
+    /**
+     * 페이지네이션 메타데이터
+     */
+    pagination: {
+      /**
+       * 전체 항목 수
+       * @example 150
+       */
+      total: number;
+      
+      /**
+       * 현재 페이지 (1부터 시작)
+       * @example 1
+       */
+      page: number;
+      
+      /**
+       * 페이지당 항목 수 (최대 50)
+       * @example 20
+       */
+      limit: number;
+      
+      /**
+       * 다음 페이지 존재 여부
+       * @example true
+       */
+      hasMore: boolean;
+    };
+  }
+  ```
+
+### Transaction Usage
+- **USE** transactions for operations that must be atomic
+- **AVOID** transactions for simple single-entity operations
+- **CONSIDER** transactions for sign-up flows or multi-step operations
+
+### Model Relationships
+- **ALWAYS** use `onDelete: Cascade` appropriately
+- **ALWAYS** use proper foreign key constraints
+- **ALWAYS** use `@@unique` constraints where business logic requires uniqueness
+
+## Testing Guidelines
+
+### Test Structure
+- **ALWAYS** create `.spec.ts` files alongside source files
+- **ALWAYS** mock `PrismaService` in tests
+- **ALWAYS** use NestJS `TestingModule` for dependency injection in tests
+- **NEVER** connect to real database in unit tests
+
+### Test Naming
+- **ALWAYS** use descriptive test names: `describe('AuthService', () => { ... })`
+- **ALWAYS** use `it('should ...')` pattern for test cases
+
+## Swagger Documentation
+
+### API Documentation
+- **ALWAYS** use `@ApiActionResponse()` for success responses
+- **ALWAYS** use `@ApiErrorResponses()` for error responses
+- **ALWAYS** provide examples in DTOs using JSDoc `@example`
+- **ALWAYS** document request/response schemas
+
+### DTO Documentation
+- **ALWAYS** add JSDoc comments with `@example` for each field
+- **ALWAYS** use descriptive property names
+- **ALWAYS** use appropriate validation decorators
+- **NEVER** use `@ApiProperty` decorator in DTOs (Request or Response)
+- **ALWAYS** use JSDoc `@example` for Swagger documentation
+- **Reason**: `nestjs-cli.json`의 `@nestjs/swagger` 플러그인이 `classValidatorShim: true`와 `introspectComments: true`로 설정되어 있어 자동으로 Swagger 스키마를 생성합니다.
+- **Pattern**:
+  ```typescript
+  // ✅ CORRECT: Request DTO - JSDoc + @example만 사용
+  export class SignUpDto {
+    /**
+     * 이메일
+     * @example "user@example.com"
+     */
+    @IsEmail()
+    @IsNotEmpty()
+    email: string;
+  }
+  
+  // ✅ CORRECT: Response DTO도 동일하게 - JSDoc + @example만 사용
+  export class ChannelResponseDto {
+    /**
+     * 채널 ID
+     * @example 1
+     */
+    id: number;
+    
+    /**
+     * 총 조회수 (BigInt를 string으로 변환)
+     * @example "708661464"
+     */
+    viewCount: string;
+  }
+  
+  // ❌ WRONG: @ApiProperty 사용하지 않음
+  export class SignUpDto {
+    @ApiProperty({ example: 'user@example.com' })
+    @IsEmail()
+    email: string;
+  }
+  ```
+- **Note**: 
+  - Request DTO: `class-validator` 데코레이터 + JSDoc `@example` → Swagger 자동 생성
+  - Response DTO: TypeScript 타입 + JSDoc `@example` → Swagger 자동 생성
+  - 둘 다 `@ApiProperty` 불필요
+
+## Security Best Practices
+
+### Cookie Security
+- **ALWAYS** set `httpOnly: true` for authentication cookies
+- **ALWAYS** set `secure: true` in production
+- **ALWAYS** use appropriate `sameSite` settings:
+  - Access Token: `sameSite: 'lax'`
+  - Refresh Token: `sameSite: 'strict'`
+
+### Rate Limiting
+- **ALWAYS** implement rate limiting for public endpoints
+- **ALWAYS** use IP-based rate limiting for email verification
+- **ALWAYS** implement blacklist for excessive requests
+
+### Input Validation
+- **ALWAYS** validate all inputs using `class-validator`
+- **ALWAYS** use `ValidationPipe` with `whitelist: true` and `forbidNonWhitelisted: true`
+- **NEVER** trust client input without validation
+
+## Logging Best Practices
+
+### Log Levels
+- **ALWAYS** use `logger.error()` for GLOBAL category errors (server errors)
+- **ALWAYS** use `logger.warn()` for BASE category errors (client errors)
+- **NEVER** use `console.log` in production code
+
+### Log Context
+- **ALWAYS** include error code, path, method, status code
+- **ALWAYS** include user ID if available
+- **ALWAYS** include IP and User-Agent
+- **ONLY** include request body/query in development environment
+
+## Configuration Management
+
+### Environment Configuration
+- **ALWAYS** use YAML files for configuration (`development.yaml`, `production.yaml`)
+- **ALWAYS** define configuration types using interfaces with `I` prefix
+- **ALWAYS** use `ConfigService` with typed interfaces
+- **NEVER** hardcode configuration values
+
+### Type Safety
+- **ALWAYS** use `IConfigKey` interface for configuration
+- **ALWAYS** use `getOrThrow()` for required configuration
+- **ALWAYS** provide default values where appropriate
+
+## Common Utilities
+
+### RequestUtil
+- **ALWAYS** use `RequestUtil.extractIp()` for IP extraction
+- **NEVER** duplicate IP extraction logic
+- **ALWAYS** consider proxy headers (`x-forwarded-for`, `x-real-ip`)
+
+### Error Code Management
+- **ALWAYS** define new error codes in `error-code.ts`
+- **ALWAYS** use `defineError()` factory function
+- **ALWAYS** categorize errors as `'GLOBAL'` or `'BASE'`
+- **ALWAYS** provide both client message and server message
+
+## Module Implementation Status
+
+### Completed Modules ✅
+- **Auth Module**: Fully implemented with email verification, JWT tokens, rate limiting
+
+### Partially Implemented Modules 🚧
+- **Users Module**: Basic structure only
+- **Channels Module**: Basic structure, ChannelHistoriesService has TODO
+- **References Module**: Basic structure only
+- **Tags Module**: Basic structure only
+
+### Missing Modules ❌
+- **Prompts Module**: Prisma model exists, module not created
+- **Subscriptions Module**: Prisma model exists, module not created
+
+## When Adding New Features
+
+### New Module Checklist
+1. Create module directory: `modules/{feature}/`
+2. Create `{feature}.module.ts`, `{feature}.controller.ts`, `{feature}.service.ts`
+3. Create `dto/` directory with DTOs
+4. Add module to `app.module.ts` imports
+5. Create error codes if needed
+6. Add Swagger documentation
+7. Create test files (`.spec.ts`)
+
+### New Endpoint Checklist
+1. Add route handler in controller
+2. Add business logic in service
+3. Create/update DTOs
+4. Add `@ApiActionResponse()` or `@ApiErrorResponses()`
+5. Add `@Public()` if endpoint is public
+6. Handle errors with `CustomException`
+7. Return standardized response format
+
+## Code Review Checklist
+
+Before submitting code, ensure:
+- ✅ All interfaces have `I` prefix
+- ✅ All database names use `snake_case`
+- ✅ All errors use `CustomException` with error codes
+- ✅ All responses follow standard format
+- ✅ No N+1 query problems
+- ✅ No `any` types (or minimal usage)
+- ✅ No `console.log` in production code
+- ✅ All imports use path aliases
+- ✅ All dependencies are `private readonly`
+- ✅ All public endpoints have `@Public()` decorator
+- ✅ All DTOs have validation decorators
+- ✅ All DTOs have JSDoc examples
+- ✅ All error codes are defined in `error-code.ts`
+
+## Remember
+
+- **Type safety first**: Use TypeScript's type system effectively
+- **Consistency is key**: Follow established patterns
+- **Security matters**: Never expose sensitive data
+- **Performance matters**: Avoid N+1 problems, use batch queries
+- **Maintainability matters**: Write clear, documented code
+- **Testability matters**: Design for easy testing
+
