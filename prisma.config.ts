@@ -5,8 +5,9 @@ import { defineConfig, env } from 'prisma/config';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as yaml from 'js-yaml';
+import * as process from 'node:process';
 
-const YAML_CONFIG_FILENAME = `./src/config/development.yaml`;
+const YAML_CONFIG_FILENAME = `./src/config/${process.env.NODE_ENV}.yaml`;
 
 const url = () => {
   const file = readFileSync(join(__dirname, YAML_CONFIG_FILENAME), 'utf8');

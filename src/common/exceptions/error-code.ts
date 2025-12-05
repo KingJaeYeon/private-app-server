@@ -37,14 +37,14 @@ export const GLOBAL_ERROR_CODES = {
     'INTERNAL-002',
     '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요',
     HttpStatus.INTERNAL_SERVER_ERROR,
-    'Database connection error.',
+    'Prisma connection issue: $prisma_code',
     'GLOBAL'
   ),
   DATABASE_ERROR: defineError(
     'INTERNAL-003',
     '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
     HttpStatus.INTERNAL_SERVER_ERROR,
-    'Database error occurred.',
+    'Database error occurred: $prisma_code',
     'GLOBAL'
   ),
   SERVICE_UNAVAILABLE: defineError(
@@ -54,12 +54,32 @@ export const GLOBAL_ERROR_CODES = {
     'External service unavailable.',
     'GLOBAL'
   ),
-  PRISMA_VALIDATION_ERROR: defineError(
+  PRISMA_VALIDATION: defineError(
     'INTERNAL-005',
     '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
     HttpStatus.INTERNAL_SERVER_ERROR,
     'Prisma validation failed before executing SQL',
     'GLOBAL'
+  ),
+  PRISMA_DUPLICATE: defineError(
+    'INTERNAL-006',
+    '중복된 데이터입니다',
+    HttpStatus.CONFLICT,
+    'P2002 Unique constraint failed on: $field',
+    'GLOBAL'
+  ),
+  PRISMA_NOT_FOUND: defineError(
+    'INTERNAL-007',
+    '요청한 데이터를 찾을 수 없습니다',
+    HttpStatus.NOT_FOUND,
+    'P2025 Record not found',
+    'GLOBAL'
+  ),
+  PRISMA_INVALID_REFERENCE: defineError(
+    'INTERNAL-008',
+    '잘못된 참조입니다',
+    HttpStatus.BAD_REQUEST,
+    'P2003 Foreign key constraint failed $field'
   ),
 
   // ===== 글로벌 (GLOBAL) ====
@@ -81,7 +101,15 @@ export const GLOBAL_ERROR_CODES = {
     'GLOBAL-003',
     '검증에 실패했습니다. 다시 입력해주세요.',
     HttpStatus.BAD_REQUEST,
-    'validate fail',
+    'class validator - validate fail',
+    'GLOBAL'
+  ),
+  // ===== HTTP 예외 (Unexpected) =====
+  UNEXPECTED_HTTP_EXCEPTION: defineError(
+    'GLOBAL-004',
+    '요청을 처리할 수 없습니다.',
+    HttpStatus.INTERNAL_SERVER_ERROR, // 기본값, 실제로는 동적으로 변경됨
+    'Unexpected HttpException occurred.',
     'GLOBAL'
   )
 } as const;

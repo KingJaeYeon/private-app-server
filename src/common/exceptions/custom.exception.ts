@@ -22,14 +22,7 @@ export class CustomException extends HttpException {
       errorObject.serverMessage = errorDef.serverMessage;
     }
 
-    super(
-      {
-        success: false,
-        ...errorObject,
-        details
-      },
-      errorDef.statusCode
-    );
+    super({ success: false, ...errorObject, details }, errorDef.statusCode);
 
     this.code = errorDef.code;
   }

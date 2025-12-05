@@ -13,10 +13,7 @@ import { AUTH_COOKIE } from '@/common/constants/auth';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const swaggerDescription = readFileSync(
-  join(__dirname, 'docs/error-codes.md'),
-  'utf8',
-);
+const swaggerDescription = readFileSync(join(__dirname, 'docs/swagger-description.md'), 'utf8');
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -34,7 +31,7 @@ async function bootstrap() {
   const appConfig = config.getOrThrow<AppConfig>('app');
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Your API')
+    .setTitle('Private App API')
     .setDescription(swaggerDescription)
     .setVersion('1.0')
     .addCookieAuth(AUTH_COOKIE.ACCESS, { type: 'apiKey', in: 'cookie' }, AUTH_COOKIE.ACCESS)
@@ -43,7 +40,11 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api-docs', app, document); // /api-docs 경로
+
+  SwaggerModule.setup('swagger', app, document, {
+    jsonDocumentUrl: 'swagger/json',
+    yamlDocumentUrl: 'swagger/yaml'
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -85,7 +86,7 @@ async function bootstrap() {
   await app.listen(appConfig.port ?? 3000);
 
   console.log(`🚀 Server: http://localhost:${appConfig.port}`);
-  console.log(`📚 Swagger: http://localhost:${appConfig.port}/api-docs`);
+  console.log(`📚 Swagger: http://localhost:${appConfig.port}/swagger`);
 }
 
 bootstrap();

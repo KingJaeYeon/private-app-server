@@ -73,16 +73,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
 
       // 예상하지 못한 HttpException
+      const unexpectedError = GLOBAL_ERROR_CODES.UNEXPECTED_HTTP_EXCEPTION;
       return {
         ...base,
-        statusCode: status,
-        code: `HTTP-${status}`,
-        message: res.message || exception.message,
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR, // 👈 500으로 강등
+        code: unexpectedError.code,
+        message: unexpectedError.message,
         category: 'GLOBAL',
-        serverMessage: `${JSON.stringify({
-          details: typeof res === 'object' ? res.details : undefined,
-          message: typeof res === 'string' ? res : res.message || exception.message
-        })}`
+        serverMessage: JSON.stringify({
+          originalStatus: status, // 추적용
+          originalCode: res.error || `HTTP-${status}`,
+          originalMessage: res.message || exception.message,
+          details: typeof res === 'object' ? res.details : undefined
+        })
       };
     }
 
@@ -93,7 +96,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // 4. Prisma Validation 에러
     if (exception instanceof PrismaClientValidationError) {
-      const e = GLOBAL_ERROR_CODES.PRISMA_VALIDATION_ERROR;
+      const e = GLOBAL_ERROR_CODES.PRISMA_VALIDATION;
       return {
         ...base,
         statusCode: e.statusCode,
@@ -126,40 +129,46 @@ export class AllExceptionsFilter implements ExceptionFilter {
     switch (exception.code) {
       // Unique constraint violation
       case 'P2002': {
-        const target = exception.meta?.target as string[] | undefined;
-        const field = target?.[0];
+        const field = (exception.meta?.target as string[])?.[0] ?? 'unknown';
 
         // 필드별 구체적 에러 (이건 GLOBAL이 아니라 BASE_ERROR_CODES에 있음)
         // 여기서는 일반적인 중복 에러로 처리
+        const e = GLOBAL_ERROR_CODES.PRISMA_DUPLICATE;
         return {
           ...base,
-          statusCode: HttpStatus.CONFLICT,
-          code: 'DB-P2002',
-          message: `중복된 데이터입니다`,
-          serverMessage: `Duplicate field: ${field}`,
-          category: 'GLOBAL'
+          statusCode: e.statusCode,
+          code: e.code,
+          message: e.message,
+          category: 'GLOBAL',
+          serverMessage: `P2002 Unique constraint failed on: ${field}`
         };
       }
 
       // Record not found
       case 'P2025': {
+        const e = GLOBAL_ERROR_CODES.PRISMA_NOT_FOUND;
         return {
           ...base,
-          statusCode: HttpStatus.NOT_FOUND,
-          code: 'DB-P2025',
-          message: '요청한 데이터를 찾을 수 없습니다',
-          category: 'GLOBAL'
+          statusCode: e.statusCode,
+          code: e.code,
+          message: e.message,
+          category: 'GLOBAL',
+          serverMessage: e.serverMessage
         };
       }
 
       // Foreign key constraint
       case 'P2003': {
+        const e = GLOBAL_ERROR_CODES.PRISMA_INVALID_REFERENCE;
+        const field = (exception.meta?.target as string[])?.[0] ?? 'unknown';
+
         return {
           ...base,
-          statusCode: HttpStatus.BAD_REQUEST,
-          code: 'DB-P2003',
-          message: '잘못된 참조입니다',
-          category: 'GLOBAL'
+          statusCode: e.statusCode,
+          code: e.code,
+          message: e.message,
+          category: 'GLOBAL',
+          serverMessage: `P2003 Foreign key constraint failed (${field})`
         };
       }
 
@@ -172,7 +181,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
           statusCode: GLOBAL_ERROR_CODES.DATABASE_CONNECTION_FAILED.statusCode,
           code: GLOBAL_ERROR_CODES.DATABASE_CONNECTION_FAILED.code,
           message: GLOBAL_ERROR_CODES.DATABASE_CONNECTION_FAILED.message,
-          category: 'GLOBAL'
+          category: 'GLOBAL',
+          serverMessage: `Prisma connection issue: ${exception.code}`
         };
       }
 
@@ -183,7 +193,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
           statusCode: GLOBAL_ERROR_CODES.DATABASE_ERROR.statusCode,
           code: GLOBAL_ERROR_CODES.DATABASE_ERROR.code,
           message: GLOBAL_ERROR_CODES.DATABASE_ERROR.message,
-          category: 'GLOBAL'
+          category: 'GLOBAL',
+          serverMessage: `Database error occurred: ${exception.code}`
         };
       }
     }
