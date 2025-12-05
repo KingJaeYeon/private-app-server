@@ -141,4 +141,8 @@ export class AuthController {
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     await this.verifyEmailService.verifyEmail(dto.email, dto.token);
   }
+
+  async googleLogin() {}
+
+  async googleLoginCallback() {}
 }

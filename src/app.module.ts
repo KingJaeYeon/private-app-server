@@ -12,6 +12,9 @@ import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { AllExceptionsFilter } from '@/common/filters';
 import { ResponseInterceptor } from '@/common/interceptors';
 import { BlacklistGuard } from '@/common/guards/blacklist.guard';
+import { TagsModule } from './modules/tags/tags.module';
+import { ChannelsModule } from '@/modules/channels/channels.module';
+import { ReferencesModule } from './modules/references/references.module';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -25,7 +28,10 @@ const isDev = process.env.NODE_ENV === 'development';
     CoreModule,
     ThrottlerModule.forRoot([{ limit: 60, ttl: 60000, skipIf: () => isDev }]),
     UsersModule,
-    AuthModule
+    AuthModule,
+    TagsModule,
+    ChannelsModule,
+    ReferencesModule
   ],
   controllers: [AppController],
   providers: [
