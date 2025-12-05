@@ -1,11 +1,13 @@
 import { Channel, Tag } from '@generated/prisma/client';
 import { IsNumber } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { ChannelOrder, ChannelOrderBy } from '@/modules/channels/dto/channel-query.dto';
 
 /**
  * BigInt 필드를 string으로 변환한 Channel 타입
  */
 type ChannelWithStringViewCount = Omit<Channel, 'viewCount'> & {
-  viewCount: string;
+  viewCount: number;
 };
 
 /**
@@ -56,12 +58,14 @@ export class SubscriptionResponseDto {
    * 구독 생성일
    * @example "2025-01-01T00:00:00.000Z"
    */
+  @Type(() => Date)
   createdAt: Date;
 
   /**
    * 구독 수정일
    * @example "2025-01-01T00:00:00.000Z"
    */
+  @Type(() => Date)
   updatedAt: Date;
 }
 
@@ -131,9 +135,12 @@ export class ChannelResponseDto implements ChannelWithStringViewCount {
 
   /**
    * 총 조회수 (BigInt를 string으로 변환)
-   * @example "708661464"
+   * @example 708661464
    */
-  viewCount: string;
+  @Transform(({ value }) =>
+    typeof value === 'bigint' ? Number(value) : value
+  )
+  viewCount: number;
 
   /**
    * 구독자 수
@@ -145,23 +152,59 @@ export class ChannelResponseDto implements ChannelWithStringViewCount {
    * 채널 개설일
    * @example "2020-08-16T07:07:53.460Z"
    */
+  @Type(() => Date)
   publishedAt: Date;
 
   /**
    * 마지막 영상 업로드일
    * @example "2025-01-01T00:00:00.000Z"
    */
+  @Type(() => Date)
   lastVideoUploadedAt: Date | null;
 
   /**
    * 생성일
    * @example "2025-01-01T00:00:00.000Z"
    */
+  @Type(() => Date)
   createdAt: Date;
 
   /**
    * 수정일
    * @example "2025-01-01T00:00:00.000Z"
    */
+  @Type(() => Date)
   updatedAt: Date;
+}
+
+export class ChannelAuthResponseDto {
+  /**
+   * 채널리스트
+   * @example channel[]
+   */
+  channel: ChannelResponseDto[];
+
+  /**
+   * 배열의 마지막 channelId
+   * @example number | null
+   */
+  cursor: number | null;
+
+  /**
+   * 다음값 여부
+   * @example true
+   */
+  hasNext: boolean;
+
+  /**
+   * 정렬
+   * @example 'desc'
+   */
+  order: ChannelOrder;
+
+  /**
+   * 정렬키 값
+   * @example 'createdAt'
+   */
+  orderBy: ChannelOrderBy;
 }

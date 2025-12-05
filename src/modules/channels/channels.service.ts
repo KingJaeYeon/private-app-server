@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/core/prisma.service';
 import { CustomException } from '@/common/exceptions';
 import { SubscribeChannelDto, UpdateSubscriptionDto, SubscriptionResponseDto, ChannelResponseDto } from './dto';
-import { TaggableType } from '@generated/prisma/client';
+import { Channel, TaggableType } from '@generated/prisma/client';
+import { ChannelQueryDto } from '@/modules/channels/dto/channel-query.dto';
 
 @Injectable()
 export class ChannelsService {
@@ -286,22 +287,22 @@ export class ChannelsService {
   /**
    * 채널 목록 조회 (공통 채널, 검색 가능)
    */
-  async getChannels(search?: string): Promise<ChannelResponseDto[]> {
-    const channels = await this.db.channel.findMany({
-      take: 50,
-      where: search
-        ? {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-              { handle: { contains: search, mode: 'insensitive' } },
-              { channelId: { contains: search, mode: 'insensitive' } }
-            ]
-          }
-        : undefined,
+  async getChannelsForPublic(): Promise<Channel[]> {
+    return this.db.channel.findMany({
+      take: 10,
       orderBy: { createdAt: 'desc' }
     });
+  }
 
-    return channels.map((channel) => this.mapChannelToDto(channel));
+  async getChannels(query: ChannelQueryDto): Promise<Channel[]> {
+    const { take, orderBy, order, cursor } = query;
+
+    return this.db.channel.findMany({
+      take: take,
+      skip: cursor ? 1 : 0, // cursor 데이터 제외
+      ...(cursor && { cursor: { id: cursor } }),
+      orderBy: { [orderBy]: order }
+    });
   }
 
   /**

@@ -7,11 +7,16 @@ import {
   UpdateSubscriptionDto,
   SubscriptionResponseDto,
   ChannelResponseDto,
-  ChannelHistoryResponseDto
+  ChannelHistoryResponseDto,
+  ChannelAuthResponseDto
 } from './dto';
 import { ApiActionResponse } from '@/common/decorators/api-action-response.decorator';
 import { ApiErrorResponses } from '@/common/decorators/api-error-response.decorator';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import { ApiGetResponse } from '@/common/decorators/api-get-response.decorator';
+import { Public } from '@/common/decorators';
+import { toResponseDto } from '@/common/helper/to-response-dto.helper';
+import { ChannelQueryDto } from '@/modules/channels/dto/channel-query.dto';
 
 @ApiTags('Channels')
 @Controller('channels')
@@ -21,18 +26,45 @@ export class ChannelsController {
     private readonly channelHistoriesService: ChannelHistoriesService
   ) {}
 
-  /**
-   * 내 구독 목록 조회
-   */
-  @Get('subscriptions')
-  @ApiOperation({
-    summary: '내 구독 목록 조회',
-    description: '현재 사용자가 구독한 채널 목록을 조회합니다. 태그 정보가 포함됩니다.'
+  @Get('public')
+  @Public()
+  @ApiGetResponse({
+    type: ChannelResponseDto,
+    isArray: true,
+    operations: { summary: '공통 채널 목록 조회(인증 X)', description: '공통 채널 목록을 조회합니다.(인증 X)' }
   })
-  @ApiActionResponse({
-    responseType: { type: SubscriptionResponseDto, isArray: true },
-    status: 200,
-    description: '구독 목록 조회 성공'
+  async getChannelsForPublic(): Promise<ChannelResponseDto[]> {
+    const channels = await this.channelsService.getChannelsForPublic();
+    return toResponseDto(ChannelResponseDto, channels);
+  }
+
+  @Get()
+  @ApiGetResponse({
+    type: ChannelAuthResponseDto,
+    isArray: true,
+    operations: { summary: '공통 채널 목록 조회 ', description: '공통 채널 목록을 조회합니다.' }
+  })
+  @ApiErrorResponses(['UNAUTHORIZED'])
+  async getChannels(@Query() query: ChannelQueryDto): Promise<ChannelAuthResponseDto> {
+    const channels = await this.channelsService.getChannels(query);
+    const lastCursor = channels.length > 0 ? channels[channels.length - 1].id : null;
+    return {
+      channel: toResponseDto(ChannelResponseDto, channels),
+      cursor: lastCursor,
+      hasNext: channels.length === query.take,
+      orderBy: query.orderBy,
+      order: query.order
+    };
+  }
+
+  @Get('subscriptions')
+  @ApiGetResponse({
+    type: SubscriptionResponseDto,
+    isArray: true,
+    operations: {
+      summary: '내 구독 목록 조회',
+      description: '현재 사용자가 구독한 채널 목록을 조회합니다. 태그 정보가 포함됩니다.'
+    }
   })
   @ApiErrorResponses(['UNAUTHORIZED'])
   async getMySubscriptions(@CurrentUser('userId') userId: string): Promise<SubscriptionResponseDto[]> {
@@ -43,14 +75,13 @@ export class ChannelsController {
    * 채널 구독
    */
   @Post('subscribe')
-  @ApiOperation({
-    summary: '채널 구독',
-    description: 'YouTube 채널을 구독합니다. 기존 채널이면 구독만 추가하고, 새 채널이면 생성 후 구독합니다.'
-  })
   @ApiActionResponse({
     responseType: { type: SubscriptionResponseDto },
-    status: 201,
-    description: '채널 구독 성공'
+    description: '채널 구독 성공',
+    operations: {
+      summary: '채널 구독',
+      description: 'YouTube 채널을 구독합니다. 기존 채널이면 구독만 추가하고, 새 채널이면 생성 후 구독합니다.'
+    }
   })
   @ApiErrorResponses(['UNAUTHORIZED', 'CHANNEL_NOT_FOUND', 'ALREADY_SUBSCRIBED', 'TAG_NOT_FOUND'])
   async subscribeChannel(
@@ -64,11 +95,11 @@ export class ChannelsController {
    * 구독 업데이트 (태그 추가/제거)
    */
   @Patch('subscriptions/:subscriptionId')
-  @ApiOperation({ summary: '구독 업데이트', description: '구독한 채널의 태그를 업데이트합니다.' })
   @ApiActionResponse({
     responseType: { type: SubscriptionResponseDto },
     status: 200,
-    description: '구독 업데이트 성공'
+    description: '구독 업데이트 성공',
+    operations: { summary: '구독 업데이트', description: '구독한 채널의 태그를 업데이트합니다.' }
   })
   @ApiErrorResponses(['UNAUTHORIZED', 'SUBSCRIPTION_NOT_FOUND', 'TAG_NOT_FOUND'])
   async updateSubscription(
@@ -83,10 +114,10 @@ export class ChannelsController {
    * 구독 취소
    */
   @Delete('subscriptions/:subscriptionId')
-  @ApiOperation({ summary: '구독 취소', description: '채널 구독을 취소합니다.' })
   @ApiActionResponse({
     message: '구독 취소 성공',
-    status: 200
+    status: 200,
+    operations: { summary: '구독 취소', description: '채널 구독을 취소합니다.' }
   })
   @ApiErrorResponses(['UNAUTHORIZED', 'SUBSCRIPTION_NOT_FOUND'])
   async unsubscribeChannel(
@@ -101,11 +132,11 @@ export class ChannelsController {
    * 구독 상세 조회
    */
   @Get('subscriptions/:subscriptionId')
-  @ApiOperation({ summary: '구독 상세 조회', description: '특정 구독의 상세 정보를 조회합니다.' })
   @ApiActionResponse({
     responseType: { type: SubscriptionResponseDto },
     status: 200,
-    description: '구독 상세 조회 성공'
+    description: '구독 상세 조회 성공',
+    operations: { summary: '구독 상세 조회', description: '특정 구독의 상세 정보를 조회합니다.' }
   })
   @ApiErrorResponses(['UNAUTHORIZED', 'SUBSCRIPTION_NOT_FOUND'])
   async getSubscription(
@@ -116,28 +147,14 @@ export class ChannelsController {
   }
 
   /**
-   * 채널 목록 조회 (공통 채널, 검색 가능)
-   */
-  @Get()
-  @ApiOperation({ summary: '채널 목록 조회', description: '공통 채널 목록을 조회합니다. 검색어로 필터링 가능합니다.' })
-  @ApiActionResponse({
-    responseType: { type: ChannelResponseDto, isArray: true },
-    status: 200,
-    description: '채널 목록 조회 성공'
-  })
-  async getChannels(@Query('search') search?: string): Promise<ChannelResponseDto[]> {
-    return this.channelsService.getChannels(search);
-  }
-
-  /**
    * 채널 상세 조회 (공통 채널 정보)
    */
   @Get(':channelId')
-  @ApiOperation({ summary: '채널 상세 조회', description: '공통 채널의 상세 정보를 조회합니다.' })
   @ApiActionResponse({
     responseType: { type: ChannelResponseDto },
     status: 200,
-    description: '채널 상세 조회 성공'
+    description: '채널 상세 조회 성공',
+    operations: { summary: '채널 상세 조회', description: '공통 채널의 상세 정보를 조회합니다.' }
   })
   @ApiErrorResponses(['UNAUTHORIZED', 'CHANNEL_NOT_FOUND'])
   async getChannel(@Param('channelId', ParseIntPipe) channelId: number): Promise<ChannelResponseDto> {
@@ -148,11 +165,11 @@ export class ChannelsController {
    * 채널 히스토리 조회
    */
   @Get(':channelId/histories')
-  @ApiOperation({ summary: '채널 히스토리 조회', description: '특정 채널의 통계 히스토리를 시간순으로 조회합니다.' })
   @ApiActionResponse({
     responseType: { type: ChannelHistoryResponseDto, isArray: true },
     status: 200,
-    description: '채널 히스토리 조회 성공'
+    description: '채널 히스토리 조회 성공',
+    operations: { summary: '채널 히스토리 조회', description: '특정 채널의 통계 히스토리를 시간순으로 조회합니다.' }
   })
   @ApiErrorResponses(['UNAUTHORIZED', 'CHANNEL_NOT_FOUND'])
   async getChannelHistories(@Param('channelId', ParseIntPipe) channelId: number): Promise<ChannelHistoryResponseDto[]> {
