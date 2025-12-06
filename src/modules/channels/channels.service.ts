@@ -4,6 +4,7 @@ import { CustomException } from '@/common/exceptions';
 import { SubscribeChannelDto, UpdateSubscriptionDto, SubscriptionResponseDto, ChannelResponseDto } from './dto';
 import { Channel, TaggableType } from '@generated/prisma/client';
 import { ChannelQueryDto } from '@/modules/channels/dto/channel-query.dto';
+import { BulkUnsubscribeResponseDto } from '@/modules/channels/dto/unsubscribe-channel.dto';
 
 @Injectable()
 export class ChannelsService {
@@ -177,52 +178,73 @@ export class ChannelsService {
   /**
    * 구독 취소
    */
-  async unsubscribeChannel(userId: string, subscriptionId: number): Promise<void> {
-    // 1. 구독 존재 확인
-    const subscription = await this.db.subscription.findFirst({
-      where: {
-        id: subscriptionId,
-        userId
-      }
-    });
-
-    if (!subscription) {
-      throw new CustomException('SUBSCRIPTION_NOT_FOUND', { subscriptionId });
-    }
-
-    // 2. 태그 관계 조회 (usageCount 감소를 위해)
-    const tagRelations = await this.db.tagRelation.findMany({
-      where: {
-        userId,
-        taggableType: TaggableType.CHANNEL,
-        taggableId: subscriptionId
-      }
-    });
-
-    const tagIds = tagRelations.map((r) => r.tagId);
-
-    // 태그 관계 삭제
-    await this.db.tagRelation.deleteMany({
-      where: {
-        userId,
-        taggableType: TaggableType.CHANNEL,
-        taggableId: subscriptionId
-      }
-    });
-
-    // 태그의 usageCount 감소
-    if (tagIds.length > 0) {
-      await this.db.tag.updateMany({
-        where: { id: { in: tagIds } },
-        data: {
-          usageCount: { decrement: 1 }
-        }
+  async unsubscribeChannels(userId: string, subscriptionIds: number[]): Promise<BulkUnsubscribeResponseDto> {
+    return this.db.$transaction(async (tx) => {
+      // 1. 유효한 구독 조회 (소유권 포함)
+      const subscriptions = await tx.subscription.findMany({
+        where: {
+          id: { in: subscriptionIds },
+          userId
+        },
+        select: { id: true }
       });
-    }
 
-    // 3. 구독 삭제
-    await this.db.subscription.delete({
-      where: { id: subscriptionId }
+      const validIds = subscriptions.map((s) => s.id);
+      const foundIdsSet = new Set(validIds);
+      const failedIds = subscriptionIds.filter((id) => !foundIdsSet.has(id));
+
+      if (validIds.length === 0) {
+        // 유효한 구독이 하나도 없다면 실패
+        throw new CustomException('SUBSCRIPTION_NOT_FOUND');
+      }
+
+      // 2. 태그 관계 조회 (감소량 계산)
+      const tagRelations = await tx.tagRelation.findMany({
+        where: {
+          userId,
+          taggableType: TaggableType.CHANNEL,
+          taggableId: { in: validIds }
+        },
+        select: { tagId: true }
+      });
+
+      // tagId별 감소 횟수 집계
+      const tagIdCounts = tagRelations.reduce((acc, { tagId }) => {
+        acc.set(tagId, (acc.get(tagId) || 0) + 1);
+        return acc;
+      }, new Map<number, number>());
+
+      // 3. 태그 관계 삭제
+      if (tagRelations.length > 0) {
+        await tx.tagRelation.deleteMany({
+          where: {
+            userId,
+            taggableType: TaggableType.CHANNEL,
+            taggableId: { in: validIds }
+          }
+        });
+      }
+
+      // 4. 태그 usageCount 개별 감소 (정확도 💯)
+      await Promise.all(
+        Array.from(tagIdCounts.entries()).map(([tagId, count]) =>
+          tx.tag.update({
+            where: { id: tagId },
+            data: { usageCount: { decrement: count } }
+          })
+        )
+      );
+
+      // 5. 구독 삭제
+      const deleted = await tx.subscription.deleteMany({
+        where: { id: { in: validIds } }
+      });
+
+      return {
+        deleted: deleted.count,
+        deletedIds: validIds,
+        failedIds
+      };
     });
   }
 
@@ -301,29 +323,27 @@ export class ChannelsService {
       take: take,
       cursor: cursor ? { id: cursor } : undefined,
       skip: cursor ? 1 : 0,
-      orderBy: { [orderBy]: order },
+      orderBy: { [orderBy]: order }
     });
 
     // 한 번의 쿼리로 구독 상태 가져오기
-    const channelIds = channels.map(c => c.id);
+    const channelIds = channels.map((c) => c.id);
     const subscriptions = await this.db.subscription.findMany({
       where: {
         userId,
-        channelId: { in: channelIds },
+        channelId: { in: channelIds }
       },
-      select: { id: true, channelId: true },
+      select: { id: true, channelId: true }
     });
 
     // Map으로 빠르게 매핑
-    const subscriptionMap = new Map(
-      subscriptions.map(s => [s.channelId, s.id])
-    );
+    const subscriptionMap = new Map(subscriptions.map((s) => [s.channelId, s.id]));
 
     // 결과 조합
-    return channels.map(channel => ({
+    return channels.map((channel) => ({
       ...channel,
       isSubscribed: subscriptionMap.has(channel.id),
-      subscriptionId: subscriptionMap.get(channel.id) ?? null,
+      subscriptionId: subscriptionMap.get(channel.id) ?? null
     }));
 
     // # Prisma Join

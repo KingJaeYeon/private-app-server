@@ -10,7 +10,7 @@ type ChannelHistoryWithStringViewCount = Omit<ChannelHistory, 'viewCount'> & {
 /**
  * 채널 히스토리 응답 DTO (Prisma ChannelHistory 모델 기반, viewCount는 string으로 변환)
  */
-export class ChannelHistoryResponseDto implements ChannelHistoryWithStringViewCount {
+export class ChannelHistoryDto implements ChannelHistoryWithStringViewCount {
   /**
    * 히스토리 ID
    * @example 1

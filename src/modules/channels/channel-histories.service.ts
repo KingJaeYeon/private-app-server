@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/core/prisma.service';
 import { CustomException } from '@/common/exceptions';
-import { ChannelHistoryResponseDto } from './dto/channel-history-response.dto';
+import { ChannelHistoryDto } from '@/modules/channels/dto';
 
 @Injectable()
 export class ChannelHistoriesService {
@@ -10,7 +10,7 @@ export class ChannelHistoriesService {
   /**
    * 채널 히스토리 조회 (시간순 정렬)
    */
-  async getChannelHistories(channelId: number): Promise<ChannelHistoryResponseDto[]> {
+  async getChannelHistories(channelId: number): Promise<ChannelHistoryDto[]> {
     // 채널 존재 확인
     const channel = await this.db.channel.findUnique({
       where: { id: channelId }
@@ -34,7 +34,7 @@ export class ChannelHistoriesService {
    * TODO: YouTube API 호출하여 채널 통계 정보를 가져와서 저장
    * Cron 작업으로 주기적으로 실행 예정
    */
-  async saveChannelHistory(channelId: number): Promise<ChannelHistoryResponseDto> {
+  async saveChannelHistory(channelId: number): Promise<ChannelHistoryDto> {
     // 채널 존재 확인 및 최신 정보 가져오기
     const channel = await this.db.channel.findUnique({
       where: { id: channelId }
@@ -61,7 +61,7 @@ export class ChannelHistoriesService {
    * 여러 채널 히스토리 일괄 저장
    * Cron 작업에서 사용
    */
-  async saveMultipleChannelHistories(channelIds: number[]): Promise<ChannelHistoryResponseDto[]> {
+  async saveMultipleChannelHistories(channelIds: number[]): Promise<ChannelHistoryDto[]> {
     // 채널 정보 일괄 조회
     const channels = await this.db.channel.findMany({
       where: { id: { in: channelIds } },
@@ -105,7 +105,7 @@ export class ChannelHistoriesService {
   /**
    * ChannelHistory 모델을 DTO로 변환
    */
-  private mapHistoryToDto(history: any): ChannelHistoryResponseDto {
+  private mapHistoryToDto(history: any): ChannelHistoryDto {
     return {
       id: history.id,
       channelId: history.channelId,
