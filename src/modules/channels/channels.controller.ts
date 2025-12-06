@@ -45,8 +45,11 @@ export class ChannelsController {
     operations: { summary: '공통 채널 목록 조회 ', description: '공통 채널 목록을 조회합니다.' }
   })
   @ApiErrorResponses(['UNAUTHORIZED'])
-  async getChannels(@Query() query: ChannelQueryDto): Promise<ChannelAuthResponseDto> {
-    const channels = await this.channelsService.getChannels(query);
+  async getChannels(
+    @CurrentUser('userId') userId: string,
+    @Query() query: ChannelQueryDto
+  ): Promise<ChannelAuthResponseDto> {
+    const channels = await this.channelsService.getChannelsWithSubscription(userId, query);
     const lastCursor = channels.length > 0 ? channels[channels.length - 1].id : null;
     return {
       channel: toResponseDto(ChannelResponseDto, channels),
@@ -74,7 +77,7 @@ export class ChannelsController {
   /**
    * 채널 구독
    */
-  @Post('subscribe')
+  @Post('subscriptions')
   @ApiActionResponse({
     responseType: { type: SubscriptionResponseDto },
     description: '채널 구독 성공',

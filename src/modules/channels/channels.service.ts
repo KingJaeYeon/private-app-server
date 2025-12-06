@@ -294,15 +294,58 @@ export class ChannelsService {
     });
   }
 
-  async getChannels(query: ChannelQueryDto): Promise<Channel[]> {
+  async getChannelsWithSubscription(userId: string, query: ChannelQueryDto): Promise<Channel[]> {
     const { take, orderBy, order, cursor } = query;
 
-    return this.db.channel.findMany({
+    const channels = await this.db.channel.findMany({
       take: take,
-      skip: cursor ? 1 : 0, // cursor 데이터 제외
-      ...(cursor && { cursor: { id: cursor } }),
-      orderBy: { [orderBy]: order }
+      cursor: cursor ? { id: cursor } : undefined,
+      skip: cursor ? 1 : 0,
+      orderBy: { [orderBy]: order },
     });
+
+    // 한 번의 쿼리로 구독 상태 가져오기
+    const channelIds = channels.map(c => c.id);
+    const subscriptions = await this.db.subscription.findMany({
+      where: {
+        userId,
+        channelId: { in: channelIds },
+      },
+      select: { id: true, channelId: true },
+    });
+
+    // Map으로 빠르게 매핑
+    const subscriptionMap = new Map(
+      subscriptions.map(s => [s.channelId, s.id])
+    );
+
+    // 결과 조합
+    return channels.map(channel => ({
+      ...channel,
+      isSubscribed: subscriptionMap.has(channel.id),
+      subscriptionId: subscriptionMap.get(channel.id) ?? null,
+    }));
+
+    // # Prisma Join
+    // const channels =await this.db.channel.findMany({
+    //   take: take,
+    //   skip: cursor ? 1 : 0, // cursor 데이터 제외
+    //   ...(cursor && { cursor: { id: cursor } }),
+    //   orderBy: { [orderBy]: order },
+    //   include: {
+    //     subscription: {
+    //       where: { userId },
+    //       take: 1,
+    //     },
+    //   },
+    // });
+    //
+    // return channels.map(channel => ({
+    //   ...channel,
+    //   isSubscribed: channel.subscription.length > 0,
+    //   subscriptionId: channel.subscription[0]?.id ?? null,
+    //   subscription: undefined, // 응답에서 제거
+    // }));
   }
 
   /**
@@ -360,7 +403,8 @@ export class ChannelsService {
       publishedAt: channel.publishedAt,
       lastVideoUploadedAt: channel.lastVideoUploadedAt,
       createdAt: channel.createdAt,
-      updatedAt: channel.updatedAt
+      updatedAt: channel.updatedAt,
+      isSubscribed: false
     };
   }
 }

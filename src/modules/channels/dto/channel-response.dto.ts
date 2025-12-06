@@ -175,6 +175,12 @@ export class ChannelResponseDto implements ChannelWithStringViewCount {
    */
   @Type(() => Date)
   updatedAt: Date;
+
+  /**
+   * 현재 유저의 구독 여부
+   * @example false
+   */
+  isSubscribed: boolean = false;
 }
 
 export class ChannelAuthResponseDto {
