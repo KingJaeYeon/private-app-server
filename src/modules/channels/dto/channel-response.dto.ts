@@ -1,205 +1,114 @@
 import { Channel, Tag } from '@generated/prisma/client';
 import { Transform, Type } from 'class-transformer';
-import { ChannelOrder, ChannelOrderBy } from '@/modules/channels/dto/channel-query.dto';
+import { ChannelOrderByEnum, ChannelOrderEnum } from '@/modules/channels/dto/index';
 
-/**
- * BigInt 필드를 string으로 변환한 Channel 타입
- */
 type ChannelWithStringViewCount = Omit<Channel, 'viewCount'> & {
   viewCount: number;
 };
 
-/**
- * 태그 정보 DTO (Prisma Tag 모델 기반)
- */
 export class ChannelTagDto implements Pick<Tag, 'id' | 'name' | 'slug'> {
-  /**
-   * 태그 ID
-   * @example 1
-   */
+  /** 태그 ID @example 1*/
   id: number;
-
-  /**
-   * 태그 이름
-   * @example "개발"
-   */
+  /** 태그 이름 @example "개발"*/
   name: string;
-
-  /**
-   * 태그 슬러그
-   * @example "development"
-   */
+  /** 태그 슬러그 @example "development"*/
   slug: string;
 }
 
-/**
- * 구독 정보 응답 DTO
- */
+/** 구독 정보 응답 DTO */
 export class SubscriptionResponseDto {
-  /**
-   * 구독 ID
-   * @example 1
-   */
+  /** 구독 ID @example 1*/
   id: number;
-
-  /**
-   * 채널 정보
-   */
+  /** 채널 정보 */
   channel: ChannelResponseDto;
-
-  /**
-   * 연결된 태그들
-   * @example [{ id: 1, name: "개발", slug: "development" }]
-   */
+  /** 연결된 태그들 @example [{ id: 1, name: "개발", slug: "development" }]*/
   tags: ChannelTagDto[];
-
-  /**
-   * 구독 생성일
-   * @example "2025-01-01T00:00:00.000Z"
-   */
+  /** 구독 생성일 @example "2025-01-01T00:00:00.000Z"*/
   @Type(() => Date)
   createdAt: Date;
-
-  /**
-   * 구독 수정일
-   * @example "2025-01-01T00:00:00.000Z"
-   */
+  /** 구독 수정일 @example "2025-01-01T00:00:00.000Z"*/
   @Type(() => Date)
   updatedAt: Date;
 }
 
-/**
- * 채널 정보 응답 DTO (Prisma Channel 모델 기반, viewCount는 string으로 변환)
- */
 export class ChannelResponseDto implements ChannelWithStringViewCount {
-  /**
-   * 채널 ID
-   * @example 1
-   */
+  /** 채널 ID @example 1*/
   id: number;
-
-  /**
-   * YouTube 채널 ID
-   * @example "UCxxxxxxxxxxxxx"
-   */
+  /** YouTube 채널 ID @example "UCxxxxxxxxxxxxx"*/
   channelId: string;
-
-  /**
-   * 채널명
-   * @example "슴슴도치"
-   */
+  /** 채널명 @example "슴슴도치"*/
   name: string;
-
-  /**
-   * 채널 핸들
-   * @example "@슴슴도치"
-   */
+  /** 채널 핸들 @example "@슴슴도치"*/
   handle: string | null;
-
-  /**
-   * 채널 설명
-   * @example "슴슴할때 보기좋은 꿀잼 유머"
-   */
+  /** 채널 설명 @example "슴슴할때 보기좋은 꿀잼 유머"*/
   description: string | null;
-
-  /**
-   * 채널 링크
-   * @example "https://www.youtube.com/channel/UCxxxxxxxxxxxxx"
-   */
+  /** 채널 링크 @example "https://www.youtube.com/channel/UCxxxxxxxxxxxxx"*/
   link: string;
-
-  /**
-   * 썸네일 URL
-   * @example "https://yt3.ggpht.com/..."
-   */
+  /** 썸네일 URL @example "https://yt3.ggpht.com/..."*/
   thumbnailUrl: string | null;
-
-  /**
-   * 국가 코드
-   * @example "KR"
-   */
+  /** 국가 코드 @example "KR"*/
   regionCode: string | null;
-
-  /**
-   * 기본 언어
-   * @example "ko"
-   */
+  /** 기본 언어 @example "ko"*/
   defaultLanguage: string | null;
-
-  /**
-   * 영상 수
-   * @example 410
-   */
+  /** 영상 수 @example 410*/
   videoCount: number;
-
-  /**
-   * 총 조회수 (BigInt를 string으로 변환)
-   * @example 708661464
-   */
+  /** 총 조회수 (BigInt를 string으로 변환) @example 708661464*/
   @Transform(({ value }) => (typeof value === 'bigint' ? Number(value) : value))
   viewCount: number;
-
-  /**
-   * 구독자 수
-   * @example 57200
-   */
+  /** 구독자 수 @example 57200*/
   subscriberCount: number;
-
-  /**
-   * 채널 개설일
-   * @example "2020-08-16T07:07:53.460Z"
-   */
+  /** 채널 개설일 @example "2020-08-16T07:07:53.460Z"*/
   @Type(() => Date)
   publishedAt: Date;
-
-  /**
-   * 마지막 영상 업로드일
-   * @example "2025-01-01T00:00:00.000Z"
-   */
+  /** 마지막 영상 업로드일 @example "2025-01-01T00:00:00.000Z"*/
   @Type(() => Date)
   lastVideoUploadedAt: Date | null;
-
-  /**
-   * 생성일
-   * @example "2025-01-01T00:00:00.000Z"
-   */
+  /** 생성일 @example "2025-01-01T00:00:00.000Z"*/
   @Type(() => Date)
   createdAt: Date;
-
-  /**
-   * 수정일
-   * @example "2025-01-01T00:00:00.000Z"
-   */
+  /** 수정일 @example "2025-01-01T00:00:00.000Z"*/
   @Type(() => Date)
   updatedAt: Date;
-
-  /**
-   * 현재 유저의 구독 여부
-   * @example false
-   */
+  /** 현재 유저의 구독 여부 @example false*/
   isSubscribed: boolean = false;
+  /** 연결된 태그들 (구독 중일 때만 포함) @example [{ id: 1, name: "개발", slug: "development" }]*/
+  tags?: ChannelTagDto[];
+
+  static from(channel: Channel, isSubscribed = false): ChannelResponseDto {
+    return {
+      id: channel.id,
+      channelId: channel.channelId,
+      name: channel.name,
+      handle: channel.handle,
+      description: channel.description,
+      link: channel.link,
+      thumbnailUrl: channel.thumbnailUrl,
+      regionCode: channel.regionCode,
+      defaultLanguage: channel.defaultLanguage,
+      videoCount: channel.videoCount,
+      viewCount: Number(channel.viewCount),
+      subscriberCount: channel.subscriberCount,
+      publishedAt: channel.publishedAt,
+      lastVideoUploadedAt: channel.lastVideoUploadedAt,
+      createdAt: channel.createdAt,
+      updatedAt: channel.updatedAt,
+      isSubscribed
+    };
+  }
+
+  static fromArray(channels: Channel[], subscriptionMap?: Map<number, number>): ChannelResponseDto[] {
+    return channels.map((channel) => ChannelResponseDto.from(channel, subscriptionMap?.has(channel.id) ?? false));
+  }
 }
 
 export class ChannelAuthResponseDto {
   channel: ChannelResponseDto[];
-
-  /**
-   * @example 19
-   */
+  /** @example 19*/
   cursor: number | null;
-
-  /**
-   * @example true
-   */
+  /** @example true*/
   hasNext: boolean;
-
-  /**
-   * @example 'desc'
-   */
-  order: ChannelOrder;
-
-  /**
-   * @example 'createdAt'
-   */
-  orderBy: ChannelOrderBy;
+  /** @example 'desc'*/
+  order: ChannelOrderEnum;
+  /** @example 'createdAt'*/
+  orderBy: ChannelOrderByEnum;
 }
