@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthHelperService } from './auth-helper.service';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -26,7 +27,7 @@ import { VerifyEmailService } from '@/modules/auth/verify-email.service';
     PassportModule
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, VerifyEmailService],
+  providers: [AuthService, AuthHelperService, JwtStrategy, VerifyEmailService],
   exports: [AuthService]
 })
 export class AuthModule {}

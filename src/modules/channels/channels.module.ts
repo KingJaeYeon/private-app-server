@@ -1,11 +1,24 @@
 import { Module } from '@nestjs/common';
 import { ChannelsController } from './channels.controller';
+import { SubscriptionsController } from './subscriptions.controller';
 import { ChannelsService } from './channels.service';
 import { ChannelHistoriesService } from './channel-histories.service';
+import { ChannelHistoriesHelperService } from './channel-histories-helper.service';
+import { SubscriptionService } from './subscription.service';
+import { SubscriptionHelperService } from './subscription-helper.service';
+import { TagsModule } from '@/modules/tags/tags.module';
+import { YoutubeModule } from '@/modules/youtube/youtube.module';
 
 @Module({
-  controllers: [ChannelsController],
-  providers: [ChannelsService, ChannelHistoriesService],
-  exports: [ChannelsService, ChannelHistoriesService]
+  imports: [TagsModule, YoutubeModule],
+  controllers: [ChannelsController, SubscriptionsController],
+  providers: [
+    ChannelsService,
+    ChannelHistoriesService,
+    ChannelHistoriesHelperService,
+    SubscriptionService,
+    SubscriptionHelperService
+  ],
+  exports: [ChannelsService, ChannelHistoriesService, SubscriptionService]
 })
 export class ChannelsModule {}

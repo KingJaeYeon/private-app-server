@@ -37,6 +37,8 @@ model User {
   reference    Reference[]
   tagRelation  TagRelation[]
   prompt       Prompt[]
+  apiKeys      ApiKey[]
+  serverApiKeyUsages ServerApiKeyUsage[]
 
   @@map("users")
 }
@@ -257,4 +259,50 @@ enum UserRole {
 enum TaggableType {
   REFERENCE
   CHANNEL
+}
+
+enum ApiKeyType {
+  USER   // 유저 API 키
+  SERVER // 관리자(서버) API 키
+}
+
+// YouTube API 키 (통합)
+model ApiKey {
+  id        Int       @id @default(autoincrement())
+  type      ApiKeyType
+  userId    String?   @map("user_id") // USER 타입일 때만 필수
+  apiKey    String    @map("api_key")
+  name      String?   // SERVER 타입일 때 키 이름 (예: "primary", "backup")
+  usage     Int       @default(0) // 전체 사용량 (서버 키의 경우)
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  user   User?                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usages ServerApiKeyUsage[] // 유저별 사용량 기록
+
+  @@unique([userId, type]) // USER: userId별 하나만
+  @@unique([type, name]) // SERVER: name별 하나만
+  @@index([type, isActive, usage]) // 서버 키: 사용량 낮은 순으로 조회
+  @@index([userId])
+  @@map("api_keys")
+}
+
+// 유저별 서버 API 키 사용량 추적 (악성 유저 방지)
+model ServerApiKeyUsage {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  apiKeyId  Int      @map("api_key_id")
+  date      DateTime @db.Date // 날짜만 저장 (시간 제외)
+  usage     Int      @default(0) // 해당 날짜의 사용량
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, apiKeyId, date]) // 유저-키-날짜별 하나만
+  @@index([userId, date]) // 유저별 일일 사용량 조회
+  @@index([apiKeyId, date]) // 키별 일일 사용량 조회
+  @@map("server_api_key_usages")
 }

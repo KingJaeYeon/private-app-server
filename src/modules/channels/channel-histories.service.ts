@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/core/prisma.service';
 import { CustomException } from '@/common/exceptions';
 import { ChannelHistoryDto } from '@/modules/channels/dto';
+import { ChannelHistoriesHelperService } from './channel-histories-helper.service';
 
 @Injectable()
 export class ChannelHistoriesService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    private readonly helperService: ChannelHistoriesHelperService
+  ) {}
 
   /**
    * 채널 히스토리 조회 (시간순 정렬)
@@ -26,7 +30,7 @@ export class ChannelHistoriesService {
       orderBy: { createdAt: 'asc' }
     });
 
-    return histories.map((history) => this.mapHistoryToDto(history));
+    return histories.map((history) => this.helperService.mapHistoryToDto(history));
   }
 
   /**
@@ -54,7 +58,7 @@ export class ChannelHistoriesService {
       }
     });
 
-    return this.mapHistoryToDto(history);
+    return this.helperService.mapHistoryToDto(history);
   }
 
   /**
@@ -99,20 +103,6 @@ export class ChannelHistoriesService {
       take: channels.length
     });
 
-    return createdHistories.map((history) => this.mapHistoryToDto(history));
-  }
-
-  /**
-   * ChannelHistory 모델을 DTO로 변환
-   */
-  private mapHistoryToDto(history: any): ChannelHistoryDto {
-    return {
-      id: history.id,
-      channelId: history.channelId,
-      videoCount: history.videoCount,
-      viewCount: history.viewCount.toString(), // BigInt를 문자열로
-      subscriberCount: history.subscriberCount,
-      createdAt: history.createdAt
-    };
+    return createdHistories.map((history) => this.helperService.mapHistoryToDto(history));
   }
 }

@@ -7,18 +7,15 @@ import { JwtService } from '@nestjs/jwt';
 import { IJwtPayload } from '@/modules/auth/strategies/jwt.strategy';
 import { add } from 'date-fns';
 import type { Response } from 'express';
-import { CookieOptions } from 'express';
-import { IAppConfig, IConfigKey } from '@/config/config.interface';
-import { ConfigService } from '@nestjs/config';
 import { SignUpDto } from '@/modules/auth/dto';
-import { AUTH_COOKIE } from '@/common/constants/auth';
+import { AuthHelperService } from './auth-helper.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly db: PrismaService,
-    private readonly configService: ConfigService<IConfigKey>
+    private readonly helperService: AuthHelperService
   ) {}
 
   async validateUser(identifier: string, password: string): Promise<User> {
@@ -116,8 +113,8 @@ export class AuthService {
       }
     }
     const expired = new Date(0);
-    this.setAccessCookie(res, null, expired);
-    this.setRefreshCookie(res, null, expired);
+    this.helperService.setAccessCookie(res, null, expired);
+    this.helperService.setRefreshCookie(res, null, expired);
   }
 
   async setSignInAuthCookies(
@@ -141,8 +138,8 @@ export class AuthService {
   }
 
   setAuthCookies(res: Response, tokens: { accessToken: string; refreshToken: string }) {
-    this.setAccessCookie(res, tokens.accessToken);
-    this.setRefreshCookie(res, tokens.refreshToken);
+    this.helperService.setAccessCookie(res, tokens.accessToken);
+    this.helperService.setRefreshCookie(res, tokens.refreshToken);
   }
 
   async rotateRefreshToken(refreshToken: string, ipAddress: string, userAgent: string) {
@@ -176,36 +173,5 @@ export class AuthService {
     };
 
     return this.generateJwtTokens({ payload, ipAddress, userAgent });
-  }
-
-  private setAccessCookie(res: Response, value: string | null, expires?: Date) {
-    const base = this.getCookieBaseOptions();
-    res.cookie(AUTH_COOKIE.ACCESS, value ?? '', {
-      ...base,
-      sameSite: 'lax',
-      path: '/',
-      expires
-    });
-  }
-
-  private setRefreshCookie(res: Response, value: string | null, expires?: Date) {
-    const base = this.getCookieBaseOptions();
-    res.cookie(AUTH_COOKIE.REFRESH, value ?? '', {
-      ...base,
-      sameSite: 'strict',
-      path: `/auth`,
-      expires
-    });
-  }
-
-  private getCookieBaseOptions(): CookieOptions {
-    const { domain } = this.configService.getOrThrow<IAppConfig>('app');
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    return {
-      httpOnly: true,
-      secure: isProduction,
-      domain: isProduction ? domain : undefined
-    };
   }
 }

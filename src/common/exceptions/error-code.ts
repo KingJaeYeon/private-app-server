@@ -166,6 +166,25 @@ export const BASE_ERROR_CODES = {
   TAG_RELATION_NOT_FOUND: defineError('TAG-004', '태그 연결을 찾을 수 없습니다', HttpStatus.NOT_FOUND),
   TAG_ALREADY_ATTACHED: defineError('TAG-005', '이미 연결된 태그입니다', HttpStatus.CONFLICT),
 
+  // ===== YouTube =====
+  YOUTUBE_API_KEY_NOT_FOUND: defineError(
+    'YOUTUBE-001',
+    'YouTube API 키가 등록되지 않았습니다',
+    HttpStatus.BAD_REQUEST
+  ),
+  YOUTUBE_API_QUOTA_EXCEEDED: defineError(
+    'YOUTUBE-002',
+    '일일 사용량 한도를 초과했습니다. 16시에 초기화됩니다',
+    HttpStatus.TOO_MANY_REQUESTS
+  ),
+  USER_API_QUOTA_EXCEEDED: defineError(
+    'YOUTUBE-003',
+    '일일 사용량 한도를 초과했습니다. 16시에 초기화됩니다',
+    HttpStatus.TOO_MANY_REQUESTS
+  ),
+  INVALID_API_KEY: defineError('YOUTUBE-004', '유효하지 않은 API 키입니다', HttpStatus.BAD_REQUEST),
+  YOUTUBE_API_ERROR: defineError('YOUTUBE-005', 'YouTube API 요청 중 오류가 발생했습니다', HttpStatus.BAD_REQUEST),
+
   // ===== 일반 (COMMON) =====
   VALIDATION_ERROR: defineError('COMMON-001', '입력값 검증에 실패했습니다', HttpStatus.BAD_REQUEST),
   NOT_FOUND: defineError('COMMON-002', '요청한 리소스를 찾을 수 없습니다', HttpStatus.NOT_FOUND),
