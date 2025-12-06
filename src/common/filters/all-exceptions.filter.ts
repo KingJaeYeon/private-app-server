@@ -48,7 +48,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         statusCode: status,
         code: res.code,
         message: res.message,
-        details: res.details,
+        details: exception.details, // CustomException의 details 속성 직접 사용
         serverMessage: res.serverMessage,
         category: res.category
       };
