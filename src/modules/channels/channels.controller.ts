@@ -52,13 +52,14 @@ export class ChannelsController {
   ): Promise<ChannelAuthResponseDto> {
     const channels = await this.channelsService.getChannelsWithSubscription(userId, query);
     const lastCursor = channels.length > 0 ? channels[channels.length - 1].id : null;
-    return {
+
+    return toResponseDto(ChannelAuthResponseDto, {
       channel: toResponseDto(ChannelResponseDto, channels),
       cursor: lastCursor,
       hasNext: channels.length === query.take,
       orderBy: query.orderBy,
       order: query.order
-    };
+    });
   }
 
   @Get('subscriptions')
@@ -116,7 +117,6 @@ export class ChannelsController {
 
   @Delete('subscriptions')
   @ApiActionResponse({
-    responseType: { type: BulkUnsubscribeResponseDto },
     status: 200,
     operations: { summary: '구독 취소', description: '채널 구독을 취소합니다.' }
   })

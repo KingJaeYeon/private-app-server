@@ -1,4 +1,4 @@
-import { IsArray, ArrayMinSize, IsInt, IsNumber, ArrayMaxSize } from 'class-validator';
+import { IsArray, ArrayMinSize, IsInt, ArrayMaxSize } from 'class-validator';
 
 export class UnsubscribeChannelDto {
   /**

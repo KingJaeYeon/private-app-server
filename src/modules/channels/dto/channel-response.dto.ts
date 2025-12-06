@@ -1,5 +1,4 @@
 import { Channel, Tag } from '@generated/prisma/client';
-import { IsNumber } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ChannelOrder, ChannelOrderBy } from '@/modules/channels/dto/channel-query.dto';
 
@@ -137,9 +136,7 @@ export class ChannelResponseDto implements ChannelWithStringViewCount {
    * 총 조회수 (BigInt를 string으로 변환)
    * @example 708661464
    */
-  @Transform(({ value }) =>
-    typeof value === 'bigint' ? Number(value) : value
-  )
+  @Transform(({ value }) => (typeof value === 'bigint' ? Number(value) : value))
   viewCount: number;
 
   /**
@@ -184,32 +181,24 @@ export class ChannelResponseDto implements ChannelWithStringViewCount {
 }
 
 export class ChannelAuthResponseDto {
-  /**
-   * 채널리스트
-   * @example channel[]
-   */
   channel: ChannelResponseDto[];
 
   /**
-   * 배열의 마지막 channelId
-   * @example number | null
+   * @example 19
    */
   cursor: number | null;
 
   /**
-   * 다음값 여부
    * @example true
    */
   hasNext: boolean;
 
   /**
-   * 정렬
    * @example 'desc'
    */
   order: ChannelOrder;
 
   /**
-   * 정렬키 값
    * @example 'createdAt'
    */
   orderBy: ChannelOrderBy;
