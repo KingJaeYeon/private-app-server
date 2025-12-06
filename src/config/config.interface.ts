@@ -2,6 +2,7 @@ export interface IConfigKey {
   db: IDbConfig;
   app: IAppConfig;
   jwt: IJWTConfig;
+  apikey: IApiKeyConfig;
 }
 
 export interface IDbConfig {
@@ -18,4 +19,8 @@ export interface IAppConfig {
   port: number;
   front: string;
   domain: string;
+}
+
+export interface IApiKeyConfig {
+  youtube: string;
 }

@@ -12,3 +12,6 @@ app:
 jwt:
   secret: "private-app-jwt"
   expiresIn: 1000
+
+apikey:
+  youtube: "AIzaSyDDe44x6EkzF2V0QOD1gecv929QSjD0dS4"
