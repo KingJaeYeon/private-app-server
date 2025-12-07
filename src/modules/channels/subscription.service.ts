@@ -4,7 +4,6 @@ import { CustomException } from '@/common/exceptions';
 import { SubscribeChannelDto, UpdateSubscriptionDto, SubscriptionResponseDto, ChannelResponseDto } from './dto';
 import { TaggableType } from '@generated/prisma/client';
 import { SubscriptionsQueryDto } from '@/modules/channels/dto/channel-query.dto';
-import { BulkUnsubscribeResponseDto } from '@/modules/channels/dto/unsubscribe-channel.dto';
 import { TagsService } from '@/modules/tags/tags.service';
 import { YoutubeService } from '@/modules/youtube/youtube.service';
 import { SubscriptionHelperService } from './subscription-helper.service';
@@ -122,50 +121,59 @@ export class SubscriptionService {
   /**
    * 채널 구독 (배치)
    * 기존 채널이면 구독만 추가, 새 채널이면 생성 후 구독
+   * 하나라도 실패하면 전체 롤백
+   * @returns 성공한 구독 개수
    */
-  async subscribeChannel(userId: string, dto: SubscribeChannelDto): Promise<SubscriptionResponseDto[]> {
-    // 1. 모든 handle에 대해 채널 찾기 (handle 또는 channelId로)
-    const channels = await this.db.channel.findMany({
-      where: {
-        OR: dto.handles.flatMap((handle) => [
-          { handle },
-          { channelId: handle }
-        ])
+  async subscribeChannel(userId: string, dto: SubscribeChannelDto): Promise<{ count: number }> {
+    return this.db.$transaction(async (tx) => {
+      // 1. 모든 handle에 대해 채널 찾기 (handle 또는 channelId로)
+      const channels = await tx.channel.findMany({
+        where: {
+          OR: dto.handles.flatMap((handle) => [
+            { handle },
+            { channelId: handle }
+          ])
+        }
+      });
+
+      // 2. 찾지 못한 채널 확인
+      const foundHandles = new Set(channels.flatMap((c) => [c.handle, c.channelId].filter(Boolean)));
+      const notFoundHandles = dto.handles.filter((handle) => !foundHandles.has(handle));
+
+      // 2-1. 찾지 못한 채널은 YouTube API로 조회 및 생성
+      if (notFoundHandles.length > 0) {
+        const youtubeChannels = await this.youtubeService.fetchChannelsByHandle(notFoundHandles);
+        const createdChannels = await this.youtubeService.createChannelsFromYouTube(youtubeChannels);
+        channels.push(...createdChannels);
+
+        // YouTube API에서 찾지 못한 채널이 있으면 에러
+        const createdHandles = new Set(createdChannels.flatMap((c) => [c.handle, c.channelId].filter(Boolean)));
+        const stillNotFoundHandles = notFoundHandles.filter((handle) => !createdHandles.has(handle));
+        if (stillNotFoundHandles.length > 0) {
+          throw new CustomException('CHANNEL_NOT_FOUND', { handles: stillNotFoundHandles });
+        }
       }
-    });
 
-    // 2. 찾지 못한 채널 확인
-    const foundHandles = new Set(channels.flatMap((c) => [c.handle, c.channelId].filter(Boolean)));
-    const notFoundHandles = dto.handles.filter((handle) => !foundHandles.has(handle));
+      // 3. 이미 구독 중인 채널 확인
+      const channelIds = channels.map((c) => c.id);
+      const existingSubscriptions = await tx.subscription.findMany({
+        where: {
+          userId,
+          channelId: { in: channelIds }
+        },
+        select: { channelId: true }
+      });
 
-    // 2-1. 찾지 못한 채널은 YouTube API로 조회 및 생성
-    if (notFoundHandles.length > 0) {
-      const youtubeChannels = await this.youtubeService.fetchChannelsByHandle(notFoundHandles);
-      const createdChannels = await this.youtubeService.createChannelsFromYouTube(youtubeChannels);
-      channels.push(...createdChannels);
-    }
+      const subscribedChannelIds = new Set(existingSubscriptions.map((s) => s.channelId));
+      const newChannelIds = channelIds.filter((id) => !subscribedChannelIds.has(id));
 
-    // 3. 이미 구독 중인 채널 확인
-    const channelIds = channels.map((c) => c.id);
-    const existingSubscriptions = await this.db.subscription.findMany({
-      where: {
-        userId,
-        channelId: { in: channelIds }
-      },
-      select: { channelId: true }
-    });
+      // 이미 구독 중인 채널이 있으면 에러
+      if (newChannelIds.length === 0) {
+        throw new CustomException('ALREADY_SUBSCRIBED');
+      }
 
-    const subscribedChannelIds = new Set(existingSubscriptions.map((s) => s.channelId));
-    const newChannelIds = channelIds.filter((id) => !subscribedChannelIds.has(id));
-
-    if (newChannelIds.length === 0) {
-      throw new CustomException('ALREADY_SUBSCRIBED');
-    }
-
-    // 4. 구독 일괄 생성 (트랜잭션 사용)
-    const createdSubscriptions = await this.db.$transaction(async (tx) => {
-      // 구독 생성
-      await tx.subscription.createMany({
+      // 4. 구독 일괄 생성
+      const result = await tx.subscription.createMany({
         data: newChannelIds.map((channelId) => ({
           userId,
           channelId
@@ -173,27 +181,8 @@ export class SubscriptionService {
         skipDuplicates: true
       });
 
-      // 생성된 구독 조회 (태그 없이)
-      return tx.subscription.findMany({
-        where: {
-          userId,
-          channelId: { in: newChannelIds }
-        },
-        include: {
-          channel: true
-        },
-        orderBy: { createdAt: 'desc' }
-      });
+      return { count: result.count };
     });
-
-    // 5. 태그 없이 반환 (내 구독목록으로 넣을 때는 태그 안 넣음)
-    return createdSubscriptions.map((subscription) => ({
-      id: subscription.id,
-      channel: ChannelResponseDto.from(subscription.channel, true),
-      tags: [],
-      createdAt: subscription.createdAt,
-      updatedAt: subscription.updatedAt
-    }));
   }
 
   /**
@@ -203,7 +192,7 @@ export class SubscriptionService {
     userId: string,
     subscriptionId: number,
     dto: UpdateSubscriptionDto
-  ): Promise<SubscriptionResponseDto> {
+  ): Promise<void> {
     // 1. 구독 존재 확인
     const subscription = await this.db.subscription.findFirst({
       where: {
@@ -250,14 +239,14 @@ export class SubscriptionService {
     if (dto.tagIds && dto.tagIds.length > 0) {
       await this.helperService.attachTagsToSubscription(userId, subscriptionId, dto.tagIds);
     }
-
-    return this.getSubscriptionById(userId, subscriptionId);
   }
 
   /**
-   * 구독 취소
+   * 구독 취소 (배치)
+   * 하나라도 실패하면 전체 롤백
+   * @returns 삭제된 구독 개수
    */
-  async unsubscribeChannels(userId: string, subscriptionIds: number[]): Promise<BulkUnsubscribeResponseDto> {
+  async unsubscribeChannels(userId: string, subscriptionIds: number[]): Promise<{ count: number }> {
     return this.db.$transaction(async (tx) => {
       // 1. 유효한 구독 조회 (소유권 포함)
       const subscriptions = await tx.subscription.findMany({
@@ -272,8 +261,12 @@ export class SubscriptionService {
       const foundIdsSet = new Set(validIds);
       const failedIds = subscriptionIds.filter((id) => !foundIdsSet.has(id));
 
+      // 유효하지 않은 구독이 있으면 에러 (전체 롤백)
+      if (failedIds.length > 0) {
+        throw new CustomException('SUBSCRIPTION_NOT_FOUND', { subscriptionIds: failedIds });
+      }
+
       if (validIds.length === 0) {
-        // 유효한 구독이 하나도 없다면 실패
         throw new CustomException('SUBSCRIPTION_NOT_FOUND');
       }
 
@@ -319,11 +312,7 @@ export class SubscriptionService {
         where: { id: { in: validIds } }
       });
 
-      return {
-        deleted: deleted.count,
-        deletedIds: validIds,
-        failedIds
-      };
+      return { count: deleted.count };
     });
   }
 

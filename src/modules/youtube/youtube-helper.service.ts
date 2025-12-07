@@ -397,7 +397,7 @@ export class YoutubeHelperService {
     apiKey: string;
     keyword: string;
     publishedAfter: string;
-    videoDuration: 'any' | 'short' | 'medium' | 'long';
+    videoDuration: 'all' | 'short' | 'medium' | 'long';
     pageToken?: string;
     regionCode?: string;
     relevanceLanguage?: string;
@@ -566,4 +566,3 @@ export class YoutubeHelperService {
     return stats;
   }
 }
-

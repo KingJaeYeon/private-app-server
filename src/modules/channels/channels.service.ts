@@ -14,13 +14,6 @@ export class ChannelsService {
     private readonly tagsService: TagsService
   ) {}
 
-  async getChannelsForPublic(): Promise<Channel[]> {
-    return this.db.channel.findMany({
-      take: 10,
-      orderBy: { createdAt: 'desc' }
-    });
-  }
-
   async getChannelsWithSubscription(userId: string, query: ChannelQueryDto): Promise<Channel[]> {
     const { take, orderBy, order, cursor } = query;
 

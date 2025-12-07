@@ -31,7 +31,7 @@ export class SubscriptionResponseDto {
   updatedAt: Date;
 }
 
-export class ChannelResponseDto implements ChannelWithStringViewCount {
+export class ChannelBaseResponseDto implements ChannelWithStringViewCount {
   /** 채널 ID @example 1*/
   id: number;
   /** YouTube 채널 ID @example "UCxxxxxxxxxxxxx"*/
@@ -69,6 +69,9 @@ export class ChannelResponseDto implements ChannelWithStringViewCount {
   /** 수정일 @example "2025-01-01T00:00:00.000Z"*/
   @Type(() => Date)
   updatedAt: Date;
+}
+
+export class ChannelResponseDto extends ChannelBaseResponseDto {
   /** 현재 유저의 구독 여부 @example false*/
   isSubscribed: boolean = false;
   /** 연결된 태그들 (구독 중일 때만 포함) @example [{ id: 1, name: "개발", slug: "development" }]*/
@@ -94,10 +97,6 @@ export class ChannelResponseDto implements ChannelWithStringViewCount {
       updatedAt: channel.updatedAt,
       isSubscribed
     };
-  }
-
-  static fromArray(channels: Channel[], subscriptionMap?: Map<number, number>): ChannelResponseDto[] {
-    return channels.map((channel) => ChannelResponseDto.from(channel, subscriptionMap?.has(channel.id) ?? false));
   }
 }
 

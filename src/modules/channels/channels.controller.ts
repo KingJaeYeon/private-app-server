@@ -2,12 +2,7 @@ import { Controller, Get, Param, Query, ParseIntPipe } from '@nestjs/common';
 import { ChannelsService } from './channels.service';
 import { ChannelHistoriesService } from './channel-histories.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import {
-  ChannelResponseDto,
-  ChannelHistoryDto,
-  ChannelAuthResponseDto
-} from './dto';
-import { ApiActionResponse } from '@/common/decorators/api-action-response.decorator';
+import { ChannelResponseDto, ChannelHistoryDto, ChannelAuthResponseDto } from './dto';
 import { ApiErrorResponses } from '@/common/decorators/api-error-response.decorator';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiGetResponse } from '@/common/decorators/api-get-response.decorator';
@@ -22,18 +17,6 @@ export class ChannelsController {
     private readonly channelsService: ChannelsService,
     private readonly channelHistoriesService: ChannelHistoriesService
   ) {}
-
-  @Get('public')
-  @Public()
-  @ApiGetResponse({
-    type: ChannelResponseDto,
-    isArray: true,
-    operations: { summary: '공통 채널 목록 조회(인증 X)', description: '공통 채널 목록을 조회합니다.(인증 X)' }
-  })
-  async getChannelsForPublic(): Promise<ChannelResponseDto[]> {
-    const channels = await this.channelsService.getChannelsForPublic();
-    return toResponseDto(ChannelResponseDto, channels);
-  }
 
   @Get()
   @ApiGetResponse({
@@ -60,25 +43,21 @@ export class ChannelsController {
 
   @Get('public/:channelId')
   @Public()
-  @ApiActionResponse({
-    responseType: { type: ChannelResponseDto },
-    status: 200,
-    description: '채널 상세 조회 성공',
-    operations: { summary: '채널 상세 조회', description: '공통 채널의 상세 정보를 조회합니다.' }
+  @ApiGetResponse({
+    type: ChannelResponseDto,
+    description: '공통 채널의 상세 정보를 조회합니다.',
+    operations: { summary: '채널 상세 조회' }
   })
   @ApiErrorResponses(['CHANNEL_NOT_FOUND'])
-  async getChannelForPublic(
-    @Param('channelId', ParseIntPipe) channelId: number
-  ): Promise<ChannelResponseDto> {
+  async getChannelForPublic(@Param('channelId', ParseIntPipe) channelId: number): Promise<ChannelResponseDto> {
     return this.channelsService.getChannelById({ channelId });
   }
 
   @Get(':channelId')
-  @ApiActionResponse({
-    responseType: { type: ChannelResponseDto },
-    status: 200,
-    description: '채널 상세 조회 성공',
-    operations: { summary: '채널 상세 조회', description: '공통 채널의 상세 정보를 조회합니다.' }
+  @ApiGetResponse({
+    type: ChannelResponseDto,
+    description: '공통 채널의 상세 정보를 조회합니다.',
+    operations: { summary: '채널 상세 조회' }
   })
   @ApiErrorResponses(['UNAUTHORIZED', 'CHANNEL_NOT_FOUND'])
   async getChannel(
@@ -89,9 +68,9 @@ export class ChannelsController {
   }
 
   @Get(':channelId/histories')
-  @ApiActionResponse({
-    responseType: { type: ChannelHistoryDto, isArray: true },
-    status: 200,
+  @ApiGetResponse({
+    type: ChannelHistoryDto,
+    isArray: true,
     description: '채널 히스토리 조회 성공',
     operations: { summary: '채널 히스토리 조회', description: '특정 채널의 통계 히스토리를 시간순으로 조회합니다.' }
   })

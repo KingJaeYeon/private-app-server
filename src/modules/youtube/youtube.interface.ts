@@ -95,7 +95,7 @@ export interface IKeywordSearchFilter {
   maxResults: number;
   regionCode?: string;
   relevanceLanguage?: string;
-  videoDuration: 'any' | 'short' | 'medium' | 'long';
+  videoDuration: 'all' | 'short' | 'medium' | 'long';
   minViews: number;
   minViewsPerHour: number;
 }
@@ -129,4 +129,3 @@ export interface IKeywordSearchResult {
     thumbnailUrl: string | null;
   };
 }
-

@@ -6,9 +6,8 @@ import { ApiActionResponse } from '@/common/decorators/api-action-response.decor
 import { ApiErrorResponses } from '@/common/decorators/api-error-response.decorator';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiGetResponse } from '@/common/decorators/api-get-response.decorator';
-import { toResponseDto } from '@/common/helper/to-response-dto.helper';
 import { SubscriptionsQueryDto } from '@/modules/channels/dto/channel-query.dto';
-import { BulkUnsubscribeResponseDto, UnsubscribeChannelDto } from '@/modules/channels/dto/unsubscribe-channel.dto';
+import { UnsubscribeChannelDto } from '@/modules/channels/dto/unsubscribe-channel.dto';
 
 @ApiTags('Channels')
 @Controller('channels/subscriptions')
@@ -34,25 +33,25 @@ export class SubscriptionsController {
 
   @Post()
   @ApiActionResponse({
-    responseType: { type: SubscriptionResponseDto, isArray: true },
-    description: '채널 구독 성공',
+    description: '채널 구독 성공 (Bulk 작업)',
+    body: { count: 2 },
     operations: {
-      summary: '채널 구독',
-      description: 'YouTube 채널을 구독합니다. 기존 채널이면 구독만 추가하고, 새 채널이면 생성 후 구독합니다.'
+      summary: '채널 구독 (Bulk)',
+      description:
+        'YouTube 채널을 구독합니다. 기존 채널이면 구독만 추가하고, 새 채널이면 생성 후 구독합니다. 여러 채널을 한 번에 구독할 수 있습니다. 하나라도 실패하면 전체 롤백됩니다.'
     }
   })
   @ApiErrorResponses(['UNAUTHORIZED', 'CHANNEL_NOT_FOUND', 'ALREADY_SUBSCRIBED'])
   async subscribeChannel(
     @CurrentUser('userId') userId: string,
     @Body() dto: SubscribeChannelDto
-  ): Promise<SubscriptionResponseDto[]> {
+  ): Promise<{ count: number }> {
     return this.subscriptionService.subscribeChannel(userId, dto);
   }
 
   @Patch(':subscriptionId')
   @ApiActionResponse({
-    responseType: { type: SubscriptionResponseDto },
-    status: 200,
+    body: { id: 3, message: '구독이 업데이트되었습니다.' },
     description: '구독 업데이트 성공',
     operations: { summary: '구독 업데이트', description: '구독한 채널의 태그를 업데이트합니다.' }
   })
@@ -61,21 +60,25 @@ export class SubscriptionsController {
     @CurrentUser('userId') userId: string,
     @Param('subscriptionId', ParseIntPipe) subscriptionId: number,
     @Body() dto: UpdateSubscriptionDto
-  ): Promise<SubscriptionResponseDto> {
-    return this.subscriptionService.updateSubscription(userId, subscriptionId, dto);
+  ): Promise<{ id?: number; message?: string }> {
+    await this.subscriptionService.updateSubscription(userId, subscriptionId, dto);
+    return { id: subscriptionId, message: '구독이 업데이트되었습니다.' };
   }
 
   @Delete()
   @ApiActionResponse({
-    status: 200,
-    operations: { summary: '구독 취소', description: '채널 구독을 취소합니다.' }
+    description: '구독 취소 성공 (Bulk 작업)',
+    body: { count: 3 },
+    operations: {
+      summary: '구독 취소 (Bulk)',
+      description: '채널 구독을 취소합니다. 여러 구독을 한 번에 취소할 수 있습니다. 하나라도 실패하면 전체 롤백됩니다.'
+    }
   })
   @ApiErrorResponses(['UNAUTHORIZED', 'SUBSCRIPTION_NOT_FOUND'])
   async unsubscribeChannels(
     @CurrentUser('userId') userId: string,
     @Body() { subscriptionIds }: UnsubscribeChannelDto
-  ): Promise<BulkUnsubscribeResponseDto> {
-    const result = await this.subscriptionService.unsubscribeChannels(userId, subscriptionIds);
-    return toResponseDto(BulkUnsubscribeResponseDto, result);
+  ): Promise<{ count: number }> {
+    return this.subscriptionService.unsubscribeChannels(userId, subscriptionIds);
   }
 }

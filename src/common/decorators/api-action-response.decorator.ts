@@ -8,26 +8,50 @@ import {
   ApiExtraModels
 } from '@nestjs/swagger';
 
-type ResponseType<T> = { type: Type<T>; isArray?: false } | { type: Type<T>; isArray: true };
-
-type Options<T> = {
+type SingleActionBody = {
   id?: string | number;
-  responseType?: ResponseType<T>; // 👈 객체로 묶음
   message?: string;
+};
+
+type BulkActionBody = {
+  count: number;
+  message?: string;
+};
+
+type Body = SingleActionBody | BulkActionBody;
+
+type Options = {
+  body: Body;
   status?: HttpStatus;
   description?: string;
   headers?: ApiResponseOptions['headers'];
   operations: ApiOperationOptions;
 };
 
+export const headers: ApiResponseOptions['headers'] = {
+  'Set-Cookie-Access-Token': {
+    description: '인증에 사용되는 Access Token (HttpOnly, 짧은 만료 시간)',
+    schema: {
+      type: 'string',
+      example: 'access_token=jwt.access.token; HttpOnly; Secure; Path=/'
+    }
+  },
+  'Set-Cookie-Refresh-Token': {
+    description: '토큰 갱신에 사용되는 Refresh Token (HttpOnly)',
+    schema: {
+      type: 'string',
+      example: 'refresh_token=jwt.refresh.token; HttpOnly; Secure; Path=/auth'
+    }
+  }
+};
+
 /** swagger get을 제외한 요청
  * @example
- * ApiActionResponse({ responseType: { type: UserDto }, status: 201 })
- * ApiActionResponse({ responseType: { type: UserDto, isArray: true }, status: 200 })
- * ApiActionResponse({ id: 1, message: 'deleted' })
+ * ApiActionResponse({ body: { id: 1, message: 'deleted' }, status: 201 })
+ * ApiActionResponse({ body: { count: 5 }, status: 201 })
  */
-export function ApiActionResponse<T>(options: Options<T>) {
-  const { id, message, status = 201, description, headers, responseType, operations } = options ?? {};
+export function ApiActionResponse(options: Options) {
+  const { body, status = 201, description, headers, operations } = options ?? {};
 
   const schema: Record<string, any> = {
     properties: {
@@ -36,51 +60,27 @@ export function ApiActionResponse<T>(options: Options<T>) {
     }
   };
 
-  if (responseType) {
-    const { type, isArray = false } = responseType;
-
-    // Swagger에 DTO 등록 👇 반드시 필요
-    const decorators = [
-      ApiOperation(operations),
-      ApiExtraModels(type), // 📌 Swagger에 컴포넌트 등록!
-      ApiResponse({
-        headers,
-        status,
-        description,
-        schema: {
-          ...schema,
-          properties: {
-            ...schema.properties,
-            data: isArray
-              ? {
-                  type: 'array',
-                  items: { $ref: getSchemaPath(type) }
-                }
-              : {
-                  $ref: getSchemaPath(type)
-                }
-          }
-        }
-      })
-    ];
-
-    return applyDecorators(...decorators);
-  }
-
   // responseType 없음 → 기존 처리 유지
   const dataProperties: Record<string, any> = {};
 
-  if (id !== undefined) {
+  if ('id' in body) {
     dataProperties.id = {
-      type: typeof id === 'number' ? 'number' : 'string',
-      example: id
+      type: typeof body.id === 'number' ? 'number' : 'string',
+      example: body.id
     };
   }
 
-  if (message !== undefined) {
+  if ('count' in body) {
+    dataProperties.count = {
+      type: 'number',
+      example: body.count
+    };
+  }
+
+  if (body.message !== undefined) {
     dataProperties.message = {
       type: 'string',
-      example: message
+      example: body.message
     };
   }
 

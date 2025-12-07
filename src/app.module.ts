@@ -16,6 +16,7 @@ import { YoutubeModule } from '@/modules/youtube/youtube.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { ChannelsModule } from '@/modules/channels/channels.module';
 import { ReferencesModule } from './modules/references/references.module';
+import { PublicModule } from './modules/public/public.module';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -33,7 +34,8 @@ const isDev = process.env.NODE_ENV === 'development';
     TagsModule,
     ChannelsModule,
     ReferencesModule,
-    YoutubeModule
+    YoutubeModule,
+    PublicModule
   ],
   controllers: [AppController],
   providers: [
