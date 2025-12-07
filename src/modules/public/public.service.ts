@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/core/prisma.service';
-import { ChannelBaseResponseDto } from '@/modules/channels/dto';
 import { CustomException } from '@/common/exceptions';
 
 @Injectable()

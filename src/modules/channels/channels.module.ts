@@ -8,6 +8,7 @@ import { SubscriptionService } from './subscription.service';
 import { SubscriptionHelperService } from './subscription-helper.service';
 import { TagsModule } from '@/modules/tags/tags.module';
 import { YoutubeModule } from '@/modules/youtube/youtube.module';
+import { ChannelSchedulerService } from './channel-scheduler.service';
 
 @Module({
   imports: [TagsModule, YoutubeModule],
@@ -17,7 +18,8 @@ import { YoutubeModule } from '@/modules/youtube/youtube.module';
     ChannelHistoriesService,
     ChannelHistoriesHelperService,
     SubscriptionService,
-    SubscriptionHelperService
+    SubscriptionHelperService,
+    ChannelSchedulerService
   ],
   exports: [ChannelsService, ChannelHistoriesService, SubscriptionService]
 })

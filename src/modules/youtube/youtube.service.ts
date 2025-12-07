@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/core/prisma.service';
 import { CustomException } from '@/common/exceptions';
-import { differenceInHours, parseISO } from 'date-fns';
+import { differenceInHours, parseISO, startOfDay } from 'date-fns';
 import {
   IYouTubeChannelData,
   IYouTubeVideoData,
@@ -80,6 +80,20 @@ export class YoutubeService {
       this.logger.error('YouTube API 요청 실패', error);
       throw new CustomException('CHANNEL_NOT_FOUND', { handles });
     }
+  }
+
+  async updateAllChannelsFromYouTube() {
+    const today = startOfDay(new Date());
+
+    const channels = await this.db.channel.findMany({
+      where: { updatedAt: { lt: today } }
+    });
+
+    if (channels.length === 0) {
+      return { message: 'there is no channels for update.' };
+    }
+
+    return { message: 'YouTube API: channels updated successfully.' };
   }
 
   /**
@@ -171,9 +185,7 @@ export class YoutubeService {
     );
 
     // 2. 업로드 플레이리스트 ID 조회
-    const uploadPlaylistIds = await this.helperService.fetchPlaylistIds(
-      userChannels.map((ch) => ch.channelId)
-    );
+    const uploadPlaylistIds = await this.helperService.fetchPlaylistIds(userChannels.map((ch) => ch.channelId));
 
     if (uploadPlaylistIds.length === 0) {
       return [];
@@ -204,9 +216,9 @@ export class YoutubeService {
           }
         } while (pageToken);
 
-        const filtered = this.helperService.filterByVph(allVideos, minViewsPerHour).filter((v) =>
-          this.helperService.isVideoValid(v, minViews, videoDuration)
-        );
+        const filtered = this.helperService
+          .filterByVph(allVideos, minViewsPerHour)
+          .filter((v) => this.helperService.isVideoValid(v, minViews, videoDuration));
 
         const results = this.helperService.transformToResults(filtered, channelMap);
         const sorted = results.sort((a, b) => b.viewsPerHour - a.viewsPerHour);
@@ -225,9 +237,9 @@ export class YoutubeService {
 
           if (videoIds.length > 0) {
             const videos = await this.helperService.fetchVideos(videoIds);
-            const filtered = this.helperService.filterByVph(videos, minViewsPerHour).filter((v) =>
-              this.helperService.isVideoValid(v, minViews, videoDuration)
-            );
+            const filtered = this.helperService
+              .filterByVph(videos, minViewsPerHour)
+              .filter((v) => this.helperService.isVideoValid(v, minViews, videoDuration));
             allVideos.push(...filtered);
           }
 

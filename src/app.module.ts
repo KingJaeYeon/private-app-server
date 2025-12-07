@@ -17,6 +17,7 @@ import { TagsModule } from './modules/tags/tags.module';
 import { ChannelsModule } from '@/modules/channels/channels.module';
 import { ReferencesModule } from './modules/references/references.module';
 import { PublicModule } from './modules/public/public.module';
+import { ChannelSchedulerService } from './modules/channel-scheduler/channel-scheduler.service';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -45,7 +46,8 @@ const isDev = process.env.NODE_ENV === 'development';
     { provide: APP_GUARD, useClass: BlacklistGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
-    { provide: APP_INTERCEPTOR, useClass: YoutubeApiUsageInterceptor }
+    { provide: APP_INTERCEPTOR, useClass: YoutubeApiUsageInterceptor },
+    ChannelSchedulerService
   ]
 })
 export class AppModule {}
