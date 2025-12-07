@@ -1,6 +1,7 @@
 import { Channel, Tag } from '@generated/prisma/client';
 import { Transform, Type } from 'class-transformer';
 import { ChannelOrderByEnum, ChannelOrderEnum } from '@/modules/channels/dto/index';
+import { CursorPaginationResponseDto } from '@/common/dto/cursor-pagination.dto';
 
 type ChannelWithStringViewCount = Omit<Channel, 'viewCount'> & {
   viewCount: number;
@@ -100,12 +101,8 @@ export class ChannelResponseDto extends ChannelBaseResponseDto {
   }
 }
 
-export class ChannelAuthResponseDto {
-  channel: ChannelResponseDto[];
-  /** @example 19*/
-  cursor: number | null;
-  /** @example true*/
-  hasNext: boolean;
+export class ChannelAuthResponseDto extends CursorPaginationResponseDto{
+  data: ChannelResponseDto[];
   /** @example 'desc'*/
   order: ChannelOrderEnum;
   /** @example 'createdAt'*/

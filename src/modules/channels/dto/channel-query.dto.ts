@@ -1,19 +1,8 @@
-import { Transform } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsEnum, IsInt, IsNumber, IsOptional, Max, Min } from 'class-validator';
 import { ChannelOrderByEnum, ChannelOrderEnum } from '@/modules/channels/dto';
+import { CursorPaginationDto } from '@/common/dto/cursor-pagination.dto';
 
-export class ChannelQueryDto {
-  /** 요청리스트 수 (max:50) @example 20*/
-  @Transform(({ value }) => {
-    const num = Number(value);
-    if (isNaN(num)) return 20;
-    return Math.min(num, 50);
-  })
-  @IsInt()
-  @Min(1)
-  @Max(50)
-  take: number = 20;
-
+export class ChannelQueryDto extends CursorPaginationDto {
   /** 정렬키 값 @example 'createdAt'*/
   @IsOptional()
   @IsEnum(ChannelOrderByEnum)
@@ -23,10 +12,6 @@ export class ChannelQueryDto {
   @IsOptional()
   @IsEnum(ChannelOrderEnum)
   order: ChannelOrderEnum = ChannelOrderEnum.desc;
-
-  /** 배열 마지막 채널ID @example 19*/
-  @IsOptional()
-  cursor?: number;
 }
 
 export class SubscriptionsQueryDto extends ChannelQueryDto {
