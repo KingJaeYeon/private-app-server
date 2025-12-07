@@ -125,7 +125,8 @@
 - **Subscription**
     - 사용자가 어떤 채널을 구독 중인지 관리.
     - `user_id + channel_id` 유니크 제약.
-    - 나중에 “내 구독 채널 필터/추천”의 기반이 된다.
+    - 나중에 "내 구독 채널 필터/추천"의 기반이 된다.
+    - **구현 참고**: Subscription은 Channels 모듈 내부에 `SubscriptionService`와 `SubscriptionsController`로 구현되어 있으며, 엔드포인트는 `/channels/subscriptions`입니다.
 
 ### 3.3 태그 · 태그 관계
 

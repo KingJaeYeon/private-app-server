@@ -79,9 +79,11 @@
     - 세트 A: 채널 등록 + 목록 조회 + 상세 조회
     - 세트 B: 채널 수정 + 삭제
     - 세트 C: 채널 검색/필터링
-- 예시 (`Subscriptions` 도메인)
+    - 세트 D: 채널 구독/해제 (Subscription 기능)
+- 예시 (`Subscriptions` 기능 - Channels 모듈 내부)
     - 세트 A: 채널 구독/해제 + 중복 방지
     - 세트 B: 내 구독 목록 조회 + 페이지네이션
+    - **참고**: Subscription은 Channels 모듈 내부에 구현되어 있으며, 엔드포인트는 `/channels/subscriptions`입니다.
 
 > 핵심: “오늘/이번 주에 끝낼 **기능 세트 하나**”를 고르는 것이 STEP 0.
 
@@ -154,7 +156,7 @@ STEP 1에서 작성한 미니 명세서에서 **API 계약(Contract)**을 뽑는
 - AUTH: JWT 필요
 - REQUEST BODY:
     - handle: string  // 또는 channel URL
-- RESPONSE: ChannelResponseDto
+- RESPONSE: { id?: number, message?: string }
 - ERROR:
     - CHANNEL_ALREADY_EXISTS
     - YOUTUBE_CHANNEL_NOT_FOUND
@@ -180,10 +182,40 @@ STEP 1에서 작성한 미니 명세서에서 **API 계약(Contract)**을 뽑는
 4) 채널 수정
 - METHOD: PATCH
 - PATH: /channels/:id
+- RESPONSE: { id?: number, message?: string }
 
 5) 채널 삭제
 - METHOD: DELETE
 - PATH: /channels/:id
+- RESPONSE: { id?: number, message?: string }
+
+6) 채널 구독 (Bulk)
+- METHOD: POST
+- PATH: /channels/subscriptions
+- AUTH: JWT 필요
+- REQUEST BODY:
+    - handles: string[]
+- RESPONSE: { count: number }
+- ERROR: 하나라도 실패하면 에러 발생 및 전체 롤백
+
+7) 내 구독 목록 조회
+- METHOD: GET
+- PATH: /channels/subscriptions
+- AUTH: JWT 필요
+- QUERY:
+    - tagIds?: number[]
+    - page?: number
+    - limit?: number
+- RESPONSE: SubscriptionResponseDto[]
+
+8) 구독 해제 (Bulk)
+- METHOD: DELETE
+- PATH: /channels/subscriptions
+- AUTH: JWT 필요
+- REQUEST BODY:
+    - subscriptionIds: number[]
+- RESPONSE: { count: number }
+- ERROR: 하나라도 실패하면 에러 발생 및 전체 롤백
 ```
 이 단계까지 오면, NestJS 코드는 **이 스펙을 “그대로 구현하는 작업”**으로 바뀐다.
 
@@ -208,9 +240,13 @@ STEP 1에서 작성한 미니 명세서에서 **API 계약(Contract)**을 뽑는
   - class + `class-validator` + JSDoc `@example`
   - `@ApiProperty` 사용 금지 (JSDoc 기반 Swagger)
 - Response DTO
-  - Prisma 타입에서 `Omit`/`Pick`으로 파생
-  - BigInt → string 변환을 타입으로 반영
-  - JSDoc `@example`로 문서화
+  - **GET 요청만 Response DTO 사용**
+    - Prisma 타입에서 `Omit`/`Pick`으로 파생
+    - BigInt → string 변환을 타입으로 반영
+    - JSDoc `@example`로 문서화
+  - **POST/PATCH/DELETE 요청은 Response DTO 사용하지 않음**
+    - `{ id?: number | string, message?: string }` 형식으로 반환
+    - `id`와 `message` 모두 optional
 
 ```ts
 // create-channel.dto.ts

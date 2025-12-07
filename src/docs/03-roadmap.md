@@ -83,7 +83,7 @@
 ### 2. 포함 도메인
 
 - `User`, `Auth` (이미 어느 정도 구현된 모듈 보완)
-- `Subscription`
+- `Subscription` (Channels 모듈 내부에 구현)
 - 인증/인가 Guard (`JwtAuthGuard`, `@CurrentUser()`)
 
 ### 3. 주요 기능
@@ -91,10 +91,15 @@
 - 회원가입/로그인/로그아웃
 - JWT 기반 인증
 - 구독 기능
-    - `POST /subscriptions` – 채널 구독
-    - `GET /subscriptions` – 내 구독 채널 목록
-    - `DELETE /subscriptions/:id` 또는 bulk 삭제
+    - `POST /channels/subscriptions` – 채널 구독
+    - `GET /channels/subscriptions` – 내 구독 채널 목록
+    - `DELETE /channels/subscriptions` – bulk 삭제
 - `user_id + channel_id` 유니크 제약으로 중복 구독 방지
+
+**구현 참고**
+
+- Subscription은 Channels 모듈 내부에 `SubscriptionService`와 `SubscriptionsController`로 구현되어 있습니다.
+- 채널과 구독이 밀접하게 연관되어 있어 같은 모듈에 포함하는 것이 응집도 측면에서 적합합니다.
 
 ### 4. 제외 범위
 
@@ -104,10 +109,10 @@
 
 ### 5. 완료 체크리스트
 
-- [ ] `User` ↔ `Subscription` relation 설정 및 마이그레이션
-- [ ] Auth 모듈과 Subscription 모듈 연동
-- [ ] “내 구독 목록” API에서 Channel 조인 정상 동작
-- [ ] 권한 체크(내 구독만 조회/삭제 가능) 테스트
+- [x] `User` ↔ `Subscription` relation 설정 및 마이그레이션
+- [x] Auth 모듈과 Subscription 기능 연동 (Channels 모듈 내부)
+- [x] "내 구독 목록" API에서 Channel 조인 정상 동작
+- [x] 권한 체크(내 구독만 조회/삭제 가능) 테스트
 
 ---
 
@@ -124,6 +129,11 @@
 - `TagRelation` (우선 `taggable_type = CHANNEL`)
 - (기존 `Channel`, `Subscription`과 연동)
 
+**구현 참고**
+
+- Subscription에도 태그를 부착할 수 있으며, `taggable_type = CHANNEL`을 사용합니다.
+- Subscription은 Channels 모듈 내부에 구현되어 있어 태그 기능도 자연스럽게 통합됩니다.
+
 ### 3. 주요 기능
 
 - 태그 생성/조회/삭제(기본 관리)
@@ -139,10 +149,10 @@
 
 ### 5. 완료 체크리스트
 
-- [ ] Prisma: `tag`, `tag_relations` 모델 확인 (enum `TaggableType` 포함)
-- [ ] 채널 태그 CRUD API 구현 (`/channels/:id/tags` 등)
-- [ ] 태그 사용 횟수(usage_count) 증가 로직
-- [ ] N+1 방지: TagRelation 조회 시 항상 `IN` 기반 배치 쿼리 사용
+- [x] Prisma: `tag`, `tag_relations` 모델 확인 (enum `TaggableType` 포함)
+- [x] 채널 태그 CRUD API 구현 (`/channels/:id/tags` 등)
+- [x] 태그 사용 횟수(usage_count) 증가 로직
+- [x] N+1 방지: TagRelation 조회 시 항상 `IN` 기반 배치 쿼리 사용
 
 ---
 
@@ -240,8 +250,13 @@
 
 - `Reference`
 - `Prompt`
-- `TagRelation` (`REFERENCE`, `PROMPT` 타입 추가)
+- `TagRelation` (`REFERENCE` 타입은 이미 존재, `PROMPT` 타입 추가 필요)
 - (기존 `Tag` 재사용)
+
+**현재 상태**
+
+- `TaggableType` enum에는 현재 `REFERENCE`와 `CHANNEL`만 있습니다.
+- `PROMPT` 타입은 Phase 6에서 추가될 예정입니다.
 
 ### 3. 주요 기능
 
@@ -258,8 +273,9 @@
 
 ### 5. 완료 체크리스트
 
-- [ ] Prisma: `references`, `prompts` 모델 확정
-- [ ] TagRelation에 `TaggableType.REFERENCE`, `TaggableType.PROMPT` 적용
+- [x] Prisma: `references`, `prompts` 모델 확정 (이미 존재)
+- [ ] Prisma: `TaggableType` enum에 `PROMPT` 추가 및 마이그레이션
+- [ ] TagRelation에 `TaggableType.PROMPT` 적용
 - [ ] Reference/Prompt 전용 엔드포인트 구현
 - [ ] 태그 기반 필터/검색의 기본 쿼리 패턴 확립
 

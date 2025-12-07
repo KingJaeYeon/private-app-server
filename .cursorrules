@@ -30,6 +30,22 @@ This is a NestJS 11.x backend application using TypeScript 5.7, PostgreSQL with 
   - Error: `{ success: false, statusCode: number, code: string, message: string, details?: any, timestamp: string, path: string }`
 - **NEVER** return raw data without the standard wrapper (unless using `@SkipResponseTransform()`)
 - **NEVER** include `serverMessage` in client responses
+- **Response DTO 사용 규칙**:
+  - **GET 요청만 Response DTO 사용**
+    - Response DTO는 Prisma 타입에서 파생하여 사용
+    - BigInt → string 변환을 타입으로 반영
+    - JSDoc `@example`로 문서화
+  - **POST/PATCH/DELETE 요청은 Response DTO 사용하지 않음**
+    - 단일 작업: `{ id?: number | string, message?: string }` 형식으로 반환
+      - `id`와 `message` 모두 optional
+      - 예: `return { id: subscriptionId, message: '구독이 완료되었습니다.' }`
+      - 예: `return { message: '삭제되었습니다.' }` (id 없이도 가능)
+    - **Bulk 작업 (추가/삭제/갱신)**: 성공 개수만 반환, 실패 시 에러 및 롤백
+      - 형식: `{ count: number }`
+      - `count`: 성공한 개수
+      - **하나라도 실패하면 에러를 던지고 DB 트랜잭션으로 전체 롤백**
+      - 예: `return { count: 3 }`
+      - 실패 시: `throw new CustomException('ERROR_CODE')` → 자동 롤백
 
 ### 5. Dependency Injection
 - **ALWAYS** use constructor injection
@@ -474,16 +490,28 @@ This is a NestJS 11.x backend application using TypeScript 5.7, PostgreSQL with 
 
 ### Completed Modules ✅
 - **Auth Module**: Fully implemented with email verification, JWT tokens, rate limiting
+- **Channels Module**: Fully implemented with channel management, channel history, and subscription functionality
+  - Includes `SubscriptionService` and `SubscriptionsController` (endpoints: `/channels/subscriptions`)
+  - Includes `ChannelHistoriesService` for tracking channel metrics over time
+- **Tags Module**: Fully implemented with tag management and TagRelation support for CHANNEL type
 
 ### Partially Implemented Modules 🚧
 - **Users Module**: Basic structure only
-- **Channels Module**: Basic structure, ChannelHistoriesService has TODO
-- **References Module**: Basic structure only
-- **Tags Module**: Basic structure only
+- **References Module**: Basic structure only (Prisma model exists, basic CRUD implemented)
 
 ### Missing Modules ❌
 - **Prompts Module**: Prisma model exists, module not created
-- **Subscriptions Module**: Prisma model exists, module not created
+  - Note: `TaggableType` enum currently only has `REFERENCE` and `CHANNEL`
+  - `PROMPT` type needs to be added to `TaggableType` enum in Phase 6
+
+### Implementation Notes
+- **Subscription**: Implemented as part of Channels module, not a separate module
+  - Service: `SubscriptionService` in `src/modules/channels/subscription.service.ts`
+  - Controller: `SubscriptionsController` in `src/modules/channels/subscriptions.controller.ts`
+  - Endpoints: `/channels/subscriptions` (not `/subscriptions`)
+  - Reason: Subscription is closely related to Channel domain, so keeping them together improves cohesion
+- **TaggableType**: Currently supports `REFERENCE` and `CHANNEL` only
+  - `PROMPT` type will be added in Phase 6 when Prompts module is implemented
 
 ## When Adding New Features
 

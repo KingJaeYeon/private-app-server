@@ -120,14 +120,20 @@ MVP 범위는 다음 네 축을 중심으로 한다.
 
 **MVP에서 필요한 기능**
 
-- `POST /subscriptions`
+- `POST /channels/subscriptions`
     - 로그인한 유저가 채널을 구독
-- `GET /subscriptions`
+- `GET /channels/subscriptions`
     - 내가 구독한 채널 목록을 조회
     - 채널 메타데이터와 조인
-- `DELETE /subscriptions/:id` 또는 bulk 삭제
+- `DELETE /channels/subscriptions` (bulk 삭제)
 - 구독 삭제 시 일관성 유지
     - (채널 삭제 시 구독 삭제는 MVP에서는 단순한 처리로도 충분)
+
+**구현 참고**
+
+- Subscription은 Channels 모듈 내부에 `SubscriptionService`와 `SubscriptionsController`로 구현되어 있습니다.
+- 엔드포인트는 `/channels/subscriptions` 경로를 사용합니다.
+- Subscription에도 태그를 부착할 수 있으며, `taggable_type = CHANNEL`을 사용합니다.
 
 ---
 
