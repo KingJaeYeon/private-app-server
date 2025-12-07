@@ -3,12 +3,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Reflector } from '@nestjs/core';
 import { SKIP_RESPONSE_TRANSFORM } from '@/common/decorators';
-
-interface ISuccessResponse<T> {
-  success: true;
-  data?: T;
-  timestamp: string;
-}
+import { ISuccessResponse } from '@/common/interface/response.interface';
 
 @Injectable()
 export class ResponseInterceptor<T> implements NestInterceptor<T, ISuccessResponse<T> | T> {

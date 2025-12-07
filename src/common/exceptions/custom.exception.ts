@@ -1,5 +1,6 @@
 import { HttpException } from '@nestjs/common';
-import { ERROR_CODES, ErrorCode, IErrorDefinition } from './error-code';
+import { ERROR_CODES, ErrorCode } from './error-code';
+import { IErrorDefinition } from '@/common/interface/response.interface';
 
 type ErrorObject = Omit<IErrorDefinition, 'statusCode'>;
 

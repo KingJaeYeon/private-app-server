@@ -1,12 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-
-export interface IErrorDefinition {
-  code: string;
-  message: string;
-  statusCode: HttpStatus;
-  serverMessage?: string;
-  category: 'GLOBAL' | 'BASE';
-}
+import { IErrorDefinition } from '@/common/interface/response.interface';
 
 const defineError = (
   code: string,
@@ -167,11 +160,7 @@ export const BASE_ERROR_CODES = {
   TAG_ALREADY_ATTACHED: defineError('TAG-005', '이미 연결된 태그입니다', HttpStatus.CONFLICT),
 
   // ===== YouTube =====
-  YOUTUBE_API_KEY_NOT_FOUND: defineError(
-    'YOUTUBE-001',
-    'YouTube API 키가 등록되지 않았습니다',
-    HttpStatus.BAD_REQUEST
-  ),
+  YOUTUBE_API_KEY_NOT_FOUND: defineError('YOUTUBE-001', 'YouTube API 키가 등록되지 않았습니다', HttpStatus.BAD_REQUEST),
   YOUTUBE_API_QUOTA_EXCEEDED: defineError(
     'YOUTUBE-002',
     '일일 사용량 한도를 초과했습니다. 16시에 초기화됩니다',

@@ -1,22 +1,11 @@
 // 예외를 HTTP 응답으로 변환 (로깅은 별도 처리)
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { CustomException } from '../exceptions';
 import { ErrorLoggingService } from '@/core/error-logging.service';
 import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@generated/prisma/internal/prismaNamespace';
 import { GLOBAL_ERROR_CODES } from '@/common/exceptions/error-code';
-
-export interface IErrorResponse {
-  success: false;
-  statusCode: number;
-  code: string;
-  message: string;
-  details?: any;
-  timestamp: string;
-  path: string;
-  serverMessage?: string;
-  category: 'GLOBAL' | 'BASE';
-}
+import { IErrorResponse } from '@/common/interface/response.interface';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {

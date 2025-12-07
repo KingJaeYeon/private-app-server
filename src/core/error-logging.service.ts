@@ -3,7 +3,8 @@ import { Request } from 'express';
 import { PrismaClientKnownRequestError } from '@generated/prisma/internal/prismaNamespace';
 import { CustomException } from '@/common/exceptions';
 import { RequestUtil } from '@/common/util/request.util';
-import { IErrorResponse } from '@/common/filters/all-exceptions.filter';
+
+import { IErrorResponse } from '@/common/interface/response.interface';
 
 @Injectable()
 export class ErrorLoggingService {
