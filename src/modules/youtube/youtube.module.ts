@@ -4,11 +4,11 @@ import { YoutubeService } from './youtube.service';
 import { YoutubeHelperService } from './youtube-helper.service';
 import { YoutubeApiKeyService } from './youtube-api-key.service';
 import { YoutubeSchedulerService } from './youtube-scheduler.service';
+import { YoutubeApiService } from '@/modules/youtube/youtube-api.service';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
-  providers: [YoutubeService, YoutubeHelperService, YoutubeApiKeyService, YoutubeSchedulerService],
+  providers: [YoutubeService, YoutubeHelperService, YoutubeApiService, YoutubeApiKeyService, YoutubeSchedulerService],
   exports: [YoutubeService, YoutubeApiKeyService]
 })
 export class YoutubeModule {}
-

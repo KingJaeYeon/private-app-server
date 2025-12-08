@@ -124,6 +124,7 @@ export const BASE_ERROR_CODES = {
   REFRESH_TOKEN_REVOKED: defineError('AUTH-005', '리프레시 토큰이 취소되었습니다', HttpStatus.UNAUTHORIZED),
   UNAUTHORIZED: defineError('AUTH-006', '인증이 필요합니다', HttpStatus.UNAUTHORIZED),
   FORBIDDEN: defineError('AUTH-007', '접근 권한이 없습니다', HttpStatus.FORBIDDEN),
+  USER_DAILY_QUOTA_EXCEEDED: defineError('AUTH-008', '쿼터 사용량 초가', HttpStatus.UNAUTHORIZED),
 
   // ===== 사용자 (USER) =====
   USER_NOT_FOUND: defineError('USER-001', '사용자를 찾을 수 없습니다', HttpStatus.NOT_FOUND),
@@ -167,11 +168,7 @@ export const BASE_ERROR_CODES = {
   TAG_ALREADY_ATTACHED: defineError('TAG-005', '이미 연결된 태그입니다', HttpStatus.CONFLICT),
 
   // ===== YouTube =====
-  YOUTUBE_API_KEY_NOT_FOUND: defineError(
-    'YOUTUBE-001',
-    'YouTube API 키가 등록되지 않았습니다',
-    HttpStatus.BAD_REQUEST
-  ),
+  YOUTUBE_API_KEY_NOT_FOUND: defineError('YOUTUBE-001', 'YouTube API 키가 등록되지 않았습니다', HttpStatus.BAD_REQUEST),
   YOUTUBE_API_QUOTA_EXCEEDED: defineError(
     'YOUTUBE-002',
     '일일 사용량 한도를 초과했습니다. 16시에 초기화됩니다',
