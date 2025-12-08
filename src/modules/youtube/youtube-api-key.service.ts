@@ -13,145 +13,68 @@ export class YoutubeApiKeyService {
   // ==================== 유저 API 키 ====================
 
   /**
-   * 사용자 API 키 조회 (사용량 체크 포함)
+   * 유저 API 키 조회
    */
-  async getUserApiKey(userId: string): Promise<{ apiKey: string; usage: number } | null> {
-    const userApiKey = await this.db.apiKey.findUnique({
+  async getUserApiKey(userId: string) {
+    const userKey = await this.db.apiKey.findUnique({
       where: {
         userId_type: {
           userId,
           type: ApiKeyType.USER
-        }
-      },
-      select: { apiKey: true, usage: true }
-    });
-
-    if (!userApiKey) {
-      return null;
-    }
-
-    // 사용량이 초과되었는지 체크
-    if (userApiKey.usage >= MAX_DAILY_USAGE) {
-      throw new CustomException('YOUTUBE_API_QUOTA_EXCEEDED', {
-        usage: userApiKey.usage,
-        maxUsage: MAX_DAILY_USAGE
-      });
-    }
-
-    return userApiKey;
-  }
-
-  /**
-   * 사용자 API 키 등록/업데이트
-   */
-  async upsertUserApiKey(userId: string, apiKey: string): Promise<{ apiKey: string; usage: number }> {
-    // API 키 유효성 검사
-    if (!apiKey || apiKey.trim().length === 0) {
-      throw new CustomException('INVALID_API_KEY');
-    }
-
-    const result = await this.db.apiKey.upsert({
-      where: {
-        userId_type: {
-          userId,
-          type: ApiKeyType.USER
-        }
-      },
-      create: {
-        type: ApiKeyType.USER,
-        userId,
-        apiKey: apiKey.trim(),
-        usage: 0
-      },
-      update: {
-        apiKey: apiKey.trim()
-      },
-      select: {
-        apiKey: true,
-        usage: true
+        },
+        isActive: true
       }
     });
 
-    return result;
-  }
-
-  /**
-   * 사용자 API 키 삭제
-   */
-  async deleteUserApiKey(userId: string): Promise<void> {
-    await this.db.apiKey
-      .delete({
-        where: {
-          userId_type: {
-            userId,
-            type: ApiKeyType.USER
-          }
-        }
-      })
-      .catch(() => {
-        // 이미 삭제되었거나 없는 경우 무시
-      });
-  }
-
-  /**
-   * 유저 API 키 사용량 증가 (키워드 검색용)
-   */
-  async incrementUserUsage(userId: string, amount: number = 1): Promise<void> {
-    await this.db.apiKey.update({
-      where: {
-        userId_type: {
-          userId,
-          type: ApiKeyType.USER
-        }
-      },
-      data: {
-        usage: { increment: amount }
-      }
-    });
-  }
-
-  /**
-   * 유저 API 키 사용량 조회
-   */
-  async getUserUsage(userId: string): Promise<{ usage: number; maxUsage: number }> {
-    const userApiKey = await this.db.apiKey.findUnique({
-      where: {
-        userId_type: {
-          userId,
-          type: ApiKeyType.USER
-        }
-      },
-      select: { usage: true }
-    });
-
-    if (!userApiKey) {
+    if (!userKey) {
       throw new CustomException('YOUTUBE_API_KEY_NOT_FOUND');
     }
 
     return {
-      usage: userApiKey.usage,
-      maxUsage: MAX_DAILY_USAGE
+      id: userKey.id,
+      apiKey: userKey.apiKey
     };
   }
 
-  // ==================== 서버 API 키 ====================
+  // ==================== 초기화 ====================
 
   /**
-   * 서버 API 키 조회 (사용량 가장 낮은 활성 키)
+   * 일일 사용량 초기화 (16:00에 실행)
    */
-  async getServerApiKey(): Promise<{ id: number; apiKey: string; usage: number }> {
+  async resetDailyUsage(): Promise<{ userCount: number; serverCount: number }> {
+    const [userResult, serverResult] = await Promise.all([
+      // 유저 API 키 초기화
+      this.db.apiKey.updateMany({
+        where: { type: ApiKeyType.USER },
+        data: { usage: 0 }
+      }),
+      // 서버 API 키 초기화
+      this.db.apiKey.updateMany({
+        where: { type: ApiKeyType.SERVER },
+        data: { usage: 0 }
+      })
+    ]);
+
+    // 유저별 사용량은 날짜 기반이므로 자동으로 새 날짜에 새 레코드 생성됨
+    // 오래된 레코드는 정리 필요 (선택사항)
+
+    return {
+      userCount: userResult.count,
+      serverCount: serverResult.count
+    };
+  }
+
+  /**
+   * 서버 API 키 조회 (사용량이 가장 적은 활성 키 반환)
+   */
+  async getServerApiKey() {
     const serverKey = await this.db.apiKey.findFirst({
       where: {
         type: ApiKeyType.SERVER,
         isActive: true
       },
       orderBy: {
-        usage: 'asc'
-      },
-      select: {
-        id: true,
-        apiKey: true,
-        usage: true
+        usage: 'asc' // 사용량 적은 순
       }
     });
 
@@ -159,22 +82,17 @@ export class YoutubeApiKeyService {
       throw new CustomException('YOUTUBE_API_KEY_NOT_FOUND');
     }
 
-    // 서버 키 전체 사용량 체크
-    if (serverKey.usage >= MAX_DAILY_USAGE) {
-      throw new CustomException('YOUTUBE_API_QUOTA_EXCEEDED', {
-        usage: serverKey.usage,
-        maxUsage: MAX_DAILY_USAGE
-      });
-    }
-
-    return serverKey;
+    return {
+      id: serverKey.id,
+      apiKey: serverKey.apiKey
+    };
   }
 
   /**
    * 유저가 서버 API 키 사용 (트랜잭션으로 안전하게 처리)
    */
   async useServerApiKey(userId: string, amount: number): Promise<string> {
-    return await this.db.$transaction(async (tx) => {
+    return this.db.$transaction(async (tx) => {
       // 1. 서버 키 선택 (사용량 가장 낮은 활성 키)
       const serverKey = await tx.apiKey.findFirst({
         where: {
@@ -253,116 +171,39 @@ export class YoutubeApiKeyService {
   }
 
   /**
-   * 서버 API 키 등록/업데이트
+   * 유저 일일 쿼터 체크
    */
-  async upsertServerApiKey(apiKey: string, name: string): Promise<{ apiKey: string; usage: number }> {
-    if (!apiKey || apiKey.trim().length === 0) {
-      throw new CustomException('INVALID_API_KEY');
+  async checkUserDailyQuota(userId: string, requestedQuota: number, dailyLimit: number = 10000) {
+    const todayUsage = await this.getUserTodayUsage(userId);
+
+    if (todayUsage + requestedQuota > dailyLimit) {
+      throw new CustomException('USER_DAILY_QUOTA_EXCEEDED', {
+        usage: todayUsage,
+        limit: dailyLimit,
+        requested: requestedQuota
+      });
     }
 
-    if (!name || name.trim().length === 0) {
-      throw new CustomException('BAD_REQUEST', { message: '서버 API 키 이름은 필수입니다' });
-    }
-
-    const result = await this.db.apiKey.upsert({
-      where: {
-        type_name: {
-          type: ApiKeyType.SERVER,
-          name: name.trim()
-        }
-      },
-      create: {
-        type: ApiKeyType.SERVER,
-        apiKey: apiKey.trim(),
-        name: name.trim(),
-        usage: 0
-      },
-      update: {
-        apiKey: apiKey.trim()
-      },
-      select: {
-        apiKey: true,
-        usage: true
-      }
-    });
-
-    return result;
+    return { usage: todayUsage, remaining: dailyLimit - todayUsage };
   }
 
   /**
-   * 서버 API 키 사용량 조회
+   * 유저의 오늘 사용량 조회
    */
-  async getServerUsage(): Promise<Array<{ name: string | null; usage: number; maxUsage: number }>> {
-    const serverKeys = await this.db.apiKey.findMany({
-      where: {
-        type: ApiKeyType.SERVER,
-        isActive: true
-      },
-      select: {
-        name: true,
-        usage: true
-      }
-    });
-
-    return serverKeys.map((key) => ({
-      name: key.name,
-      usage: key.usage,
-      maxUsage: MAX_DAILY_USAGE
-    }));
-  }
-
-  /**
-   * 유저별 서버 API 키 사용량 조회
-   */
-  async getUserServerUsage(userId: string): Promise<{ usage: number; maxUsage: number }> {
+  async getUserTodayUsage(userId: string): Promise<number> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const usage = await this.db.serverApiKeyUsage.findFirst({
+    const result = await this.db.serverApiKeyUsage.aggregate({
       where: {
         userId,
         date: today
       },
-      select: {
+      _sum: {
         usage: true
-      },
-      orderBy: {
-        usage: 'desc'
       }
     });
 
-    return {
-      usage: usage?.usage || 0,
-      maxUsage: MAX_USER_DAILY_USAGE
-    };
-  }
-
-  // ==================== 초기화 ====================
-
-  /**
-   * 일일 사용량 초기화 (16:00에 실행)
-   */
-  async resetDailyUsage(): Promise<{ userCount: number; serverCount: number }> {
-    const [userResult, serverResult] = await Promise.all([
-      // 유저 API 키 초기화
-      this.db.apiKey.updateMany({
-        where: { type: ApiKeyType.USER },
-        data: { usage: 0 }
-      }),
-      // 서버 API 키 초기화
-      this.db.apiKey.updateMany({
-        where: { type: ApiKeyType.SERVER },
-        data: { usage: 0 }
-      })
-    ]);
-
-    // 유저별 사용량은 날짜 기반이므로 자동으로 새 날짜에 새 레코드 생성됨
-    // 오래된 레코드는 정리 필요 (선택사항)
-
-    return {
-      userCount: userResult.count,
-      serverCount: serverResult.count
-    };
+    return result._sum.usage || 0;
   }
 }
-

@@ -17,7 +17,7 @@ import { TagsModule } from './modules/tags/tags.module';
 import { ChannelsModule } from '@/modules/channels/channels.module';
 import { ReferencesModule } from './modules/references/references.module';
 import { PublicModule } from './modules/public/public.module';
-import { ScheduleModule } from '@nestjs/schedule';
+import { ChannelSchedulerService } from './modules/channel-scheduler/channel-scheduler.service';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -28,7 +28,6 @@ const isDev = process.env.NODE_ENV === 'development';
       isGlobal: true,
       load: [configuration]
     }),
-    ScheduleModule.forRoot(),
     CoreModule,
     ThrottlerModule.forRoot([{ limit: 60, ttl: 60000, skipIf: () => isDev }]),
     UsersModule,
@@ -37,7 +36,7 @@ const isDev = process.env.NODE_ENV === 'development';
     ChannelsModule,
     ReferencesModule,
     YoutubeModule,
-    PublicModule,
+    PublicModule
   ],
   controllers: [AppController],
   providers: [

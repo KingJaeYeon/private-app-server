@@ -21,7 +21,8 @@ export interface IYouTubeChannelData {
       uploads?: string;
     };
   };
-  lastVideoUploadedAt?: Date | null;
+  // 가공되서 추가된 값
+  lastVideoUploadedAt?: string;
 }
 
 export interface IYouTubeVideoData {
@@ -128,4 +129,54 @@ export interface IKeywordSearchResult {
     publishedAt: Date;
     thumbnailUrl: string | null;
   };
+}
+
+export interface IApiRequest {
+  apiKey: string;
+  apiKeyId: number;
+  userId?: string;
+}
+
+export interface IYouTubeChannelRequest extends IApiRequest {
+  userId?: string;
+  ids?: string[];
+  handles?: string[];
+}
+
+export interface IYouTubeVideoRequest extends IApiRequest {
+  videoIds: string[];
+}
+
+export interface IFetchPlaylistItems extends IApiRequest {
+  upload: string;
+}
+
+export interface IFetchPlaylistItemDetails extends IFetchPlaylistItems, IApiRequest {
+  pageToken?: string;
+}
+
+export interface IFetchSearchVideo extends IApiRequest {
+  keyword: string;
+  publishedAfter: string;
+  videoDuration: 'any' | 'short' | 'medium' | 'long';
+  regionCode?: string;
+  relevanceLanguage?: string;
+  pageToken?: string;
+}
+
+export interface IChannelStats {
+  handle: string | null;
+  subscriberCount: number;
+  videoCount: number;
+  viewCount: string;
+  regionCode: string | null;
+  link: string;
+  publishedAt: Date;
+  thumbnailUrl: string | null;
+}
+
+// ✅ API 응답 타입 추가
+export interface IApiResponse<T> {
+  items: T[];
+  usedQuota: number;
 }
