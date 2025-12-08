@@ -1,6 +1,7 @@
 import { Channel, Tag } from '@generated/prisma/client';
-import { Transform, Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import { ChannelOrderByEnum, ChannelOrderEnum } from '@/modules/channels/dto/index';
+import { CursorPaginationResponseDto } from '@/common/dto/cursor-pagination.dto';
 
 type ChannelWithStringViewCount = Omit<Channel, 'viewCount'> & {
   viewCount: number;
@@ -33,40 +34,56 @@ export class SubscriptionResponseDto {
 
 export class ChannelBaseResponseDto implements ChannelWithStringViewCount {
   /** 채널 ID @example 1*/
+  @Expose()
   id: number;
   /** YouTube 채널 ID @example "UCxxxxxxxxxxxxx"*/
+  @Expose()
   channelId: string;
   /** 채널명 @example "슴슴도치"*/
+  @Expose()
   name: string;
   /** 채널 핸들 @example "@슴슴도치"*/
+  @Expose()
   handle: string | null;
   /** 채널 설명 @example "슴슴할때 보기좋은 꿀잼 유머"*/
+  @Expose()
   description: string | null;
   /** 채널 링크 @example "https://www.youtube.com/channel/UCxxxxxxxxxxxxx"*/
+  @Expose()
   link: string;
   /** 썸네일 URL @example "https://yt3.ggpht.com/..."*/
+  @Expose()
   thumbnailUrl: string | null;
   /** 국가 코드 @example "KR"*/
+  @Expose()
   regionCode: string | null;
   /** 기본 언어 @example "ko"*/
+  @Expose()
   defaultLanguage: string | null;
   /** 영상 수 @example 410*/
+  @Expose()
   videoCount: number;
   /** 총 조회수 (BigInt를 string으로 변환) @example 708661464*/
+  @Expose()
   @Transform(({ value }) => (typeof value === 'bigint' ? Number(value) : value))
   viewCount: number;
   /** 구독자 수 @example 57200*/
+  @Expose()
   subscriberCount: number;
   /** 채널 개설일 @example "2020-08-16T07:07:53.460Z"*/
+  @Expose()
   @Type(() => Date)
   publishedAt: Date;
   /** 마지막 영상 업로드일 @example "2025-01-01T00:00:00.000Z"*/
+  @Expose()
   @Type(() => Date)
   lastVideoUploadedAt: Date | null;
   /** 생성일 @example "2025-01-01T00:00:00.000Z"*/
+  @Expose()
   @Type(() => Date)
   createdAt: Date;
   /** 수정일 @example "2025-01-01T00:00:00.000Z"*/
+  @Expose()
   @Type(() => Date)
   updatedAt: Date;
 }
@@ -100,12 +117,8 @@ export class ChannelResponseDto extends ChannelBaseResponseDto {
   }
 }
 
-export class ChannelAuthResponseDto {
-  channel: ChannelResponseDto[];
-  /** @example 19*/
-  cursor: number | null;
-  /** @example true*/
-  hasNext: boolean;
+export class ChannelAuthResponseDto extends CursorPaginationResponseDto {
+  data: ChannelResponseDto[];
   /** @example 'desc'*/
   order: ChannelOrderEnum;
   /** @example 'createdAt'*/

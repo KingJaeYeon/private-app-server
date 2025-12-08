@@ -1,12 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-
-export interface IErrorDefinition {
-  code: string;
-  message: string;
-  statusCode: HttpStatus;
-  serverMessage?: string;
-  category: 'GLOBAL' | 'BASE';
-}
+import { IErrorDefinition } from '@/common/interface/response.interface';
 
 const defineError = (
   code: string,

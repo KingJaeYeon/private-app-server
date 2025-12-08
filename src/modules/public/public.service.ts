@@ -27,8 +27,7 @@ export class PublicService {
       orderBy: { createdAt: 'desc' },
       select: { id: true }
     });
-
-    const isIncluded = publicChannels.every((channel) => channel.id === channelId);
+    const isIncluded = publicChannels.some((channel) => channel.id === channelId);
     if (!isIncluded) {
       throw new CustomException('FORBIDDEN', { message: '최근 추가된 채널10개만 제공 됩니다.' });
     }

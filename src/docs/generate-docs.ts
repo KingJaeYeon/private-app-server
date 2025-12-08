@@ -1,11 +1,12 @@
 import * as fs from 'fs';
-import { ERROR_CODES, IErrorDefinition } from '@/common/exceptions/error-code';
+import { ERROR_CODES } from '@/common/exceptions/error-code';
 import { join } from 'node:path';
 import process from 'node:process';
 import { readFileSync } from 'node:fs';
 import * as yaml from 'js-yaml';
 import { IConfigKey } from '@/config/config.interface';
-import { AUTH_COOKIE } from '@/common/constants/auth'; // ERROR_CODES 타입 임포트
+import { AUTH_COOKIE } from '@/common/constants/auth';
+import {IErrorDefinition} from "@/common/interface/response.interface"; // ERROR_CODES 타입 임포트
 
 const YAML_CONFIG_FILENAME = `./src/config/${process.env.NODE_ENV}.yaml`;
 
