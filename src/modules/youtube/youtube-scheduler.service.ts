@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, Timeout } from '@nestjs/schedule';
 import { YoutubeApiKeyService } from './youtube-api-key.service';
 import { PrismaService } from '@/core/prisma.service';
 import { YoutubeApiService } from '@/modules/youtube/youtube-api.service';
@@ -21,9 +21,9 @@ export class YoutubeSchedulerService {
 
   /**
    * 매일 16:00에 실행 (한국 시간 기준)
-   * Cron 표현식: '0 16 * * *' (매일 16시 0분)
+   * Cron 표현식: '0 0 16 * * *' (매일 16시 0분)
    */
-  @Cron('0 16 * * *', {
+  @Cron('0 0 16 * * *', {
     name: 'reset-youtube-api-usage',
     timeZone: 'Asia/Seoul'
   })
@@ -40,11 +40,9 @@ export class YoutubeSchedulerService {
 
   /**
    * 당일 업데이트 안된 채널 데이터 갱신 (Cron)
+   * Cron 표현식: '0 0 16 5 * *' (매일 16시 5분)
    */
-  @Cron('0 16 5 * *', {
-    name: 'channel-history',
-    timeZone: 'Asia/Seoul'
-  })
+  @Timeout(0)
   async updateAllChannelsFromYouTube() {
     this.logger.log('🔄 채널 데이터 갱신 스케줄러 시작');
 
@@ -138,7 +136,6 @@ export class YoutubeSchedulerService {
 
       this.logger.log('✅ 채널 데이터 갱신 완료');
     } catch (error) {
-      this.logger.error('❌ 채널 데이터 갱신 실패:', error);
       throw error;
     }
   }
