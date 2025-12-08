@@ -86,7 +86,7 @@ export class YoutubeApiService {
 
       this.logger.debug(`채널 조회: ${items.length}/${chunk.length}개`);
     }
-    await this.updateApiKeyUsage(apiKeyId, userId, usedQuota);
+    await this.updateApiKeyUsage(apiKeyId, userId, usedQuota, 'channels');
 
     return { items: allItems, usedQuota };
   }
@@ -109,7 +109,7 @@ export class YoutubeApiService {
           ...(pageToken && { pageToken })
         }
       });
-      await this.updateApiKeyUsage(apiKeyId, userId, 1);
+      await this.updateApiKeyUsage(apiKeyId, userId, 1, 'playlistItems');
       return {
         items: data?.items ?? [],
         nextPageToken: data?.nextPageToken,
@@ -139,7 +139,7 @@ export class YoutubeApiService {
         maxResults: 1
       }
     });
-    await this.updateApiKeyUsage(apiKeyId, userId, 1);
+    await this.updateApiKeyUsage(apiKeyId, userId, 1, 'playlistItems');
 
     const lastVideoUploadedAt = data?.items?.[0]?.snippet?.publishedAt;
 
@@ -173,7 +173,7 @@ export class YoutubeApiService {
 
       this.logger.debug(`비디오 조회: ${items.length}/${chunk.length}개`);
     }
-    await this.updateApiKeyUsage(apiKeyId, userId, usedQuota);
+    await this.updateApiKeyUsage(apiKeyId, userId, usedQuota, 'videos');
 
     return { items: allItems, usedQuota };
   }
@@ -211,7 +211,7 @@ export class YoutubeApiService {
       }
     });
 
-    await this.updateApiKeyUsage(apiKeyId, userId, 100);
+    await this.updateApiKeyUsage(apiKeyId, userId, 100, 'search');
 
     return {
       videoIds: (data?.items ?? []).map((item: any) => item?.id?.videoId).filter(Boolean),
@@ -220,7 +220,7 @@ export class YoutubeApiService {
     };
   }
 
-  private async updateApiKeyUsage(apiKeyId: number, userId: string | undefined, quota: number) {
+  private async updateApiKeyUsage(apiKeyId: number, userId: string | undefined, quota: number, message: string) {
     if (quota === 0) return;
 
     try {
@@ -242,7 +242,7 @@ export class YoutubeApiService {
         });
       }
 
-      this.logger.debug(`쿼터 사용: ${quota} (API Key ID: ${apiKeyId}, User: ${userId || 'N/A'})`);
+      this.logger.debug(`쿼터 사용 ${message}: ${quota} (API Key ID: ${apiKeyId}, User: ${userId || 'N/A'})`);
     } catch (error) {
       this.logger.error('쿼터 업데이트 실패:', error);
     }
