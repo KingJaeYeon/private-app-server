@@ -1,0 +1,897 @@
+# Cursor Rules for Private App Server
+
+## Project Context
+
+This is a **NestJS 11.x** backend application using **TypeScript 5.7**, **PostgreSQL with Prisma ORM**, and **JWT authentication**. The project follows a **feature-based modular architecture** with **strict type safety** and **standardized error handling**.
+
+---
+
+## 🚨 CRITICAL RULES - ABSOLUTE REQUIREMENTS
+
+### Rule 1: Interface Naming Convention
+
+**MANDATORY:**
+- **ALWAYS** prefix ALL interfaces with `I` (capital I)
+- **Examples**: `IErrorResponse`, `IConfigKey`, `IJwtPayload`, `IClientInfoData`
+
+**FORBIDDEN:**
+- **NEVER** create interfaces without the `I` prefix
+- **NEVER** use `I` prefix for type aliases (e.g., `ErrorCode`, `ErrorDefinition`)
+
+**Pattern:**
+```typescript
+// ✅ CORRECT
+interface IUserData {
+  id: string;
+  email: string;
+}
+
+// ❌ FORBIDDEN
+interface UserData {
+  id: string;
+  email: string;
+}
+```
+
+---
+
+### Rule 2: Database Naming Convention
+
+**MANDATORY:**
+- **ALWAYS** use `snake_case` for ALL table names and column names in Prisma schema
+- **Reason**: AWS RDS migration constraints and database case-insensitivity consistency
+
+**FORBIDDEN:**
+- **NEVER** use `camelCase` or `PascalCase` for database entities
+- **NEVER** mix naming conventions
+
+**Examples:**
+- ✅ `email_verified`, `created_at`, `user_id`, `refresh_tokens`
+- ❌ `emailVerified`, `createdAt`, `userId`, `refreshTokens`
+
+---
+
+### Rule 3: Error Handling
+
+**MANDATORY:**
+- **ALWAYS** use `CustomException` for ALL business logic errors
+- **ALWAYS** use error codes from `ERROR_CODES` constant (defined in `error-code.ts`)
+- **ALWAYS** separate `serverMessage` (logging only) from client-facing messages
+
+**FORBIDDEN:**
+- **NEVER** throw raw `Error` or `HttpException` directly
+- **NEVER** hardcode error messages in code
+- **NEVER** expose `serverMessage` to clients
+- **NEVER** include stack traces in client responses
+
+**Pattern:**
+```typescript
+// ✅ CORRECT
+throw new CustomException('USER_NOT_FOUND', { userId: '123' });
+
+// ❌ FORBIDDEN
+throw new Error('User not found');
+throw new HttpException('User not found', 404);
+throw new CustomException('USER_NOT_FOUND', { serverMessage: 'exposed to client' });
+```
+
+**Error Code Structure:**
+- `GLOBAL_ERROR_CODES`: System-level errors (INTERNAL_SERVER_ERROR, DATABASE_ERROR)
+- `BASE_ERROR_CODES`: Business logic errors (USER_NOT_FOUND, CHANNEL_NOT_FOUND)
+
+---
+
+### Rule 4: Response Format Standardization
+
+**MANDATORY:**
+- **ALWAYS** return standardized response format
+- **ALWAYS** use `ResponseInterceptor` for automatic transformation (unless `@SkipResponseTransform()` is used)
+
+**Success Response Format:**
+```typescript
+{
+  success: true,
+  data?: T,
+  timestamp: string
+}
+```
+
+**Error Response Format:**
+```typescript
+{
+  success: false,
+  statusCode: number,
+  code: string,
+  message: string,
+  details?: any,
+  timestamp: string,
+  path: string
+}
+```
+
+**FORBIDDEN:**
+- **NEVER** return raw data without standard wrapper (unless `@SkipResponseTransform()`)
+- **NEVER** include `serverMessage` in client responses
+- **NEVER** return different response structures
+
+**Response DTO Rules:**
+
+1. **GET Requests ONLY:**
+   - **MUST** use Response DTOs
+   - **MUST** derive from Prisma types using TypeScript utility types (`Omit`, `Pick`, `Partial`)
+   - **MUST** convert `BigInt` fields to `string` or `number` for JSON serialization
+   - **MUST** use JSDoc `@example` for Swagger documentation
+   - **MUST** use `implements` keyword for type safety
+
+2. **POST/PATCH/DELETE (Single Operations):**
+   - **MUST NOT** use Response DTOs
+   - **MUST** return: `{ id?: number | string, message?: string }`
+   - Both `id` and `message` are optional
+   - Example: `return { id: subscriptionId, message: 'Subscription completed.' }`
+   - Example: `return { message: 'Deleted successfully.' }` (id can be omitted)
+
+3. **POST/PATCH/DELETE (Bulk Operations):**
+   - **MUST NOT** use Response DTOs
+   - **MUST** return: `{ count: number }`
+   - **MUST** throw error and rollback transaction if ANY operation fails
+   - Example: `return { count: 3 }`
+   - On failure: `throw new CustomException('ERROR_CODE')` → automatic rollback
+
+**Pattern:**
+```typescript
+// ✅ CORRECT: GET with Response DTO
+@Get(':id')
+async getChannel(@Param('id') id: number): Promise<ChannelResponseDto> {
+  const channel = await this.service.getChannel(id);
+  return toResponseDto(ChannelResponseDto, channel);
+}
+
+// ✅ CORRECT: POST single operation
+@Post()
+async createChannel(@Body() dto: CreateChannelDto) {
+  const id = await this.service.createChannel(dto);
+  return { id, message: 'Channel created successfully.' };
+}
+
+// ✅ CORRECT: POST bulk operation
+@Post('bulk')
+async createChannels(@Body() dto: CreateChannelsDto) {
+  const count = await this.service.createChannelsBulk(dto);
+  return { count };
+}
+
+// ❌ FORBIDDEN: POST with Response DTO
+@Post()
+async createChannel(@Body() dto: CreateChannelDto): Promise<ChannelResponseDto> {
+  // FORBIDDEN: POST should not return Response DTO
+}
+```
+
+---
+
+### Rule 5: Dependency Injection
+
+**MANDATORY:**
+- **ALWAYS** use constructor injection
+- **ALWAYS** mark ALL dependencies as `private readonly`
+- **ALWAYS** use `@Injectable()` decorator for services
+
+**FORBIDDEN:**
+- **NEVER** use property injection
+- **NEVER** use service locator pattern
+- **NEVER** use `public` or non-readonly dependencies
+
+**Pattern:**
+```typescript
+// ✅ CORRECT
+@Injectable()
+export class ChannelsService {
+  constructor(
+    private readonly db: PrismaService,
+    private readonly configService: ConfigService<IConfigKey>
+  ) {}
+}
+
+// ❌ FORBIDDEN
+@Injectable()
+export class ChannelsService {
+  @Inject(PrismaService)
+  private db: PrismaService; // Property injection
+}
+```
+
+---
+
+### Rule 6: File Naming Convention
+
+**MANDATORY:**
+- **ALWAYS** follow these exact suffixes:
+  - Controllers: `*.controller.ts`
+  - Services: `*.service.ts`
+  - Modules: `*.module.ts`
+  - Guards: `*.guard.ts`
+  - Decorators: `*.decorator.ts`
+  - DTOs: `*.dto.ts`
+  - Strategies: `*.strategy.ts`
+  - Utilities: `*.util.ts`
+  - Tests: `*.spec.ts`
+
+**FORBIDDEN:**
+- **NEVER** deviate from these naming conventions
+- **NEVER** use different suffixes
+
+---
+
+### Rule 7: Polymorphic Relations (TagRelation) - Performance Critical
+
+**MANDATORY:**
+- **ALWAYS** use batch queries with `{ in: [...] }` to avoid N+1 problems
+- **ALWAYS** use `Promise.all()` for parallel queries when fetching multiple types
+- **ALWAYS** leverage existing indexes: `[userId, taggableType]`, `[tagId, taggableType]`, `[taggableType, taggableId]`
+
+**FORBIDDEN:**
+- **NEVER** query TagRelation inside loops
+- **NEVER** perform sequential queries when batch is possible
+- **NEVER** ignore existing database indexes
+
+**Pattern:**
+```typescript
+// ✅ CORRECT: Batch query
+const relations = await db.tagRelation.findMany({
+  where: { taggableId: { in: [1, 2, 3] } }
+});
+
+// ✅ CORRECT: Parallel queries
+const [channelTags, referenceTags] = await Promise.all([
+  db.tagRelation.findMany({ where: { taggableType: 'CHANNEL', taggableId: { in: channelIds } } }),
+  db.tagRelation.findMany({ where: { taggableType: 'REFERENCE', taggableId: { in: referenceIds } } })
+]);
+
+// ❌ FORBIDDEN: N+1 problem
+for (const item of items) {
+  const tags = await db.tagRelation.findMany({ where: { taggableId: item.id } });
+}
+```
+
+---
+
+### Rule 8: Response DTO and Prisma Types
+
+**MANDATORY:**
+- **ALWAYS** check if Prisma generated types exist in `@generated/prisma/client` before creating DTOs
+- **ALWAYS** use TypeScript utility types (`Omit`, `Pick`, `Partial`, etc.) to derive DTOs from Prisma types when structure is similar
+- **ALWAYS** use `implements` keyword to ensure DTOs match Prisma types (type safety)
+- **ALWAYS** convert `BigInt` fields to `string` or `number` in response DTOs (JSON serialization)
+
+**When to Use Prisma Types:**
+- Response DTO structure is nearly identical to Prisma model
+- Minimal field additions/removals (e.g., only BigInt → string conversion)
+- Type safety is critical
+
+**When NOT to Use Prisma Types:**
+- Response DTO combines multiple models or transforms data significantly
+- Client-exposed fields differ substantially from Prisma model
+- Many computed fields or transformed data
+
+**Pattern:**
+```typescript
+// ✅ CORRECT: Prisma type-based DTO
+import { Channel } from '@generated/prisma/client';
+
+type ChannelWithStringViewCount = Omit<Channel, 'viewCount'> & {
+  viewCount: number;
+};
+
+export class ChannelResponseDto implements ChannelWithStringViewCount {
+  /**
+   * Channel ID
+   * @example 1
+   */
+  id: number;
+  
+  /**
+   * Total view count (BigInt converted to number)
+   * @example 708661464
+   */
+  viewCount: number;
+  // ... all fields
+}
+
+// ✅ CORRECT: Pick for partial type
+export class ChannelTagDto implements Pick<Tag, 'id' | 'name' | 'slug'> {
+  /**
+   * Tag ID
+   * @example 1
+   */
+  id: number;
+  // ...
+}
+
+// ❌ FORBIDDEN: Ignoring Prisma types
+export class ChannelResponseDto {
+  id: number;
+  // Same structure as Prisma but redefined
+}
+```
+
+---
+
+## 🚫 CRITICAL RULES - ABSOLUTE PROHIBITIONS
+
+### Prohibition 1: Type Safety Violations
+
+**FORBIDDEN:**
+- **NEVER** use `any` type unless absolutely necessary (ESLint allows it, but minimize usage)
+- **NEVER** use type assertions (`as any`) without proper type guards
+- **NEVER** disable TypeScript strict mode features
+
+**MANDATORY:**
+- **ALWAYS** use proper TypeScript types and interfaces
+- **ALWAYS** use type guards when type assertions are necessary
+- **ALWAYS** leverage TypeScript's type system for safety
+
+**Pattern:**
+```typescript
+// ❌ FORBIDDEN
+function processData(data: any) {
+  return data.value;
+}
+
+// ✅ CORRECT
+function processData(data: IDataInput) {
+  return data.value;
+}
+```
+
+---
+
+### Prohibition 2: Database Query Anti-patterns
+
+**FORBIDDEN:**
+- **NEVER** perform database queries inside loops (N+1 problem)
+- **NEVER** use raw SQL unless absolutely necessary (maintainability nightmare)
+- **NEVER** fetch unnecessary data (use `select` to limit fields)
+- **NEVER** ignore database indexes
+
+**MANDATORY:**
+- **ALWAYS** use batch queries (`{ in: [...] }`) for multiple IDs
+- **ALWAYS** use transactions for multi-step operations that must be atomic
+- **ALWAYS** use `select` to limit returned fields when possible
+- **ALWAYS** leverage existing database indexes
+
+**Pattern:**
+```typescript
+// ❌ FORBIDDEN: N+1 problem
+for (const userId of userIds) {
+  const user = await db.user.findUnique({ where: { id: userId } });
+}
+
+// ✅ CORRECT: Batch query
+const users = await db.user.findMany({
+  where: { id: { in: userIds } }
+});
+```
+
+---
+
+### Prohibition 3: Security Violations
+
+**FORBIDDEN:**
+- **NEVER** expose sensitive information in error messages to clients
+- **NEVER** log passwords, tokens, or sensitive user data
+- **NEVER** disable security headers (Helmet) in production
+- **NEVER** use `console.log` for production logging (use Logger service)
+- **NEVER** trust client input without validation
+
+**MANDATORY:**
+- **ALWAYS** validate and sanitize ALL user inputs using `class-validator`
+- **ALWAYS** use `ValidationPipe` with `whitelist: true` and `forbidNonWhitelisted: true`
+- **ALWAYS** use Logger service for production logging
+- **ALWAYS** separate server messages (logging) from client messages
+
+**Pattern:**
+```typescript
+// ❌ FORBIDDEN
+console.log('User password:', user.password);
+throw new Error(`Database error: ${dbError.message}`);
+
+// ✅ CORRECT
+this.logger.error('Database error', { errorCode: 'DB-001', userId: user.id });
+throw new CustomException('DATABASE_ERROR');
+```
+
+---
+
+### Prohibition 4: Code Duplication
+
+**FORBIDDEN:**
+- **NEVER** duplicate IP extraction logic (use `RequestUtil.extractIp()`)
+- **NEVER** duplicate error handling logic
+- **NEVER** duplicate validation logic
+
+**MANDATORY:**
+- **ALWAYS** extract common functionality to utility classes or services
+- **ALWAYS** reuse existing utilities and helpers
+- **ALWAYS** follow DRY (Don't Repeat Yourself) principle
+
+**Pattern:**
+```typescript
+// ❌ FORBIDDEN: Duplication
+const ip = req.headers['x-forwarded-for'] || req.ip;
+
+// ✅ CORRECT: Reuse utility
+const ip = RequestUtil.extractIp(request);
+```
+
+---
+
+### Prohibition 5: Module Structure Violations
+
+**FORBIDDEN:**
+- **NEVER** create circular dependencies between modules
+- **NEVER** import modules that aren't needed
+- **NEVER** violate feature-based module structure
+
+**MANDATORY:**
+- **ALWAYS** follow feature-based module structure
+- **ALWAYS** export only what other modules need
+- **ALWAYS** keep modules focused on single responsibility
+
+---
+
+## Code Style and Conventions
+
+### Naming Conventions
+
+**MANDATORY:**
+- **Classes**: PascalCase (`AuthService`, `CustomException`)
+- **Interfaces**: `I` + PascalCase (`IErrorResponse`, `IConfigKey`)
+- **Variables/Functions**: camelCase (`errorResponse`, `buildErrorResponse`)
+- **Constants**: UPPER_SNAKE_CASE (`ERROR_CODES`, `AUTH_COOKIE`)
+- **Boolean variables**: Prefix with `is`, `has`, or `should` (`isBlacklisted`, `hasPermission`)
+- **Private members**: `private readonly` with camelCase
+
+### Import Order
+
+**MANDATORY ORDER:**
+1. NestJS official modules
+2. External libraries
+3. Project internal modules (using `@/` path alias)
+4. Relative paths
+5. Type-only imports: `import type { ... }` or `import { type ... }`
+
+**Pattern:**
+```typescript
+// ✅ CORRECT: Proper import order
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '@/core/prisma.service';
+import { CustomException } from '@/common/exceptions';
+import type { IConfigKey } from '@/config/config.interface';
+```
+
+### Path Aliases
+
+**MANDATORY:**
+- **ALWAYS** use `@/*` for `src/*` imports
+- **ALWAYS** use `@generated/*` for `src/generated/*` imports
+
+**FORBIDDEN:**
+- **NEVER** use relative paths for cross-module imports
+
+### Comments and Documentation
+
+**MANDATORY:**
+- **ALWAYS** write comments in Korean for business logic
+- **ALWAYS** use JSDoc for public APIs
+- **ALWAYS** mark incomplete features with `// TODO:` comments
+- **ALWAYS** document complex logic with inline comments
+
+### Prettier Configuration
+
+**MANDATORY SETTINGS:**
+- Semicolons: Required
+- Trailing commas: None
+- Quotes: Single quotes
+- Line width: 120 characters
+- Tab width: 2 spaces
+- End of line: Auto (OS-specific)
+
+---
+
+## Architecture Patterns
+
+### Module Structure
+
+**MANDATORY STRUCTURE:**
+```
+modules/{feature}/
+├── {feature}.controller.ts
+├── {feature}.service.ts
+├── {feature}.module.ts
+├── dto/
+└── (optional: guards/, strategies/, *.helper.service.ts)
+```
+
+### Service Layer
+
+**MANDATORY:**
+- **ALWAYS** keep controllers thin (delegate to services)
+- **ALWAYS** keep services focused on single responsibility
+- **ALWAYS** use `@Injectable()` decorator for services
+
+**FORBIDDEN:**
+- **NEVER** put business logic in controllers
+
+### Pagination for List Endpoints
+
+**MANDATORY:**
+- **ALWAYS** implement pagination for GET endpoints that return arrays
+- **ALWAYS** accept `page` (default: 1) and `limit` (default: 20, max: 50) query parameters
+- **ALWAYS** return paginated response with metadata (total, page, limit, hasMore)
+- **ALWAYS** use Prisma's `skip` and `take` for database queries
+- **ALWAYS** use `Promise.all()` to fetch data and count in parallel
+
+**Pattern:**
+```typescript
+// Controller
+@Get()
+async getList(
+  @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+  @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number
+) {
+  return this.service.getList(page, limit);
+}
+
+// Service
+async getList(page: number, limit: number) {
+  const maxLimit = Math.min(limit, 50);
+  const skip = (page - 1) * maxLimit;
+  
+  const [items, total] = await Promise.all([
+    this.db.model.findMany({ skip, take: maxLimit }),
+    this.db.model.count()
+  ]);
+  
+  return {
+    items,
+    pagination: { total, page, limit: maxLimit, hasMore: skip + maxLimit < total }
+  };
+}
+```
+
+### Error Response Building
+
+**MANDATORY:**
+- **ALWAYS** use `AllExceptionsFilter` for error transformation
+- **ALWAYS** separate server messages (logging) from client messages
+- **ALWAYS** include `timestamp` and `path` in error responses
+
+**FORBIDDEN:**
+- **NEVER** expose stack traces to clients
+
+### Authentication & Authorization
+
+**MANDATORY:**
+- **ALWAYS** use `@Public()` decorator for public endpoints
+- **ALWAYS** use `@CurrentUser()` decorator to extract user from request
+- **ALWAYS** use `@ClientInfo()` decorator to extract IP and User-Agent
+- **ALWAYS** validate JWT tokens through `JwtAuthGuard`
+
+**FORBIDDEN:**
+- **NEVER** bypass authentication guards without `@Public()` decorator
+
+---
+
+## Prisma Best Practices
+
+### Query Optimization
+
+**MANDATORY:**
+- **ALWAYS** use batch queries (`{ in: [...] }`) for multiple IDs
+- **ALWAYS** use `select` to limit returned fields when possible
+- **ALWAYS** leverage database indexes (check schema for existing indexes)
+- **ALWAYS** use `Promise.all()` for independent parallel queries
+
+**FORBIDDEN:**
+- **NEVER** use `include` unnecessarily (fetch only what you need)
+
+### Transaction Usage
+
+**MANDATORY:**
+- **ALWAYS** use transactions for operations that must be atomic
+- **ALWAYS** rollback on any failure in bulk operations
+
+**When to Use:**
+- Multi-step operations that must be atomic
+- Sign-up flows
+- Bulk operations (all-or-nothing)
+
+**When NOT to Use:**
+- Simple single-entity operations
+
+### Model Relationships
+
+**MANDATORY:**
+- **ALWAYS** use `onDelete: Cascade` appropriately
+- **ALWAYS** use proper foreign key constraints
+- **ALWAYS** use `@@unique` constraints where business logic requires uniqueness
+
+---
+
+## Swagger Documentation
+
+### API Documentation
+
+**MANDATORY:**
+- **ALWAYS** use `@ApiActionResponse()` for POST/PATCH/DELETE success responses
+- **ALWAYS** use `@ApiGetResponse()` for GET success responses
+- **ALWAYS** use `@ApiErrorResponses()` for error responses
+- **ALWAYS** provide examples in DTOs using JSDoc `@example`
+- **ALWAYS** document request/response schemas
+
+### DTO Documentation
+
+**MANDATORY:**
+- **ALWAYS** add JSDoc comments with `@example` for each field
+- **ALWAYS** use descriptive property names
+- **ALWAYS** use appropriate validation decorators
+
+**FORBIDDEN:**
+- **NEVER** use `@ApiProperty` decorator in DTOs (Request or Response)
+
+**Reason**: `nestjs-cli.json`'s `@nestjs/swagger` plugin has `classValidatorShim: true` and `introspectComments: true` enabled, automatically generating Swagger schemas.
+
+**Pattern:**
+```typescript
+// ✅ CORRECT: Request DTO - JSDoc + @example only
+export class SignUpDto {
+  /**
+   * Email address
+   * @example "user@example.com"
+   */
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}
+
+// ✅ CORRECT: Response DTO - JSDoc + @example only
+export class ChannelResponseDto {
+  /**
+   * Channel ID
+   * @example 1
+   */
+  id: number;
+  
+  /**
+   * Total view count (BigInt converted to string)
+   * @example "708661464"
+   */
+  viewCount: string;
+}
+
+// ❌ FORBIDDEN: @ApiProperty usage
+export class SignUpDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  email: string;
+}
+```
+
+---
+
+## Security Best Practices
+
+### Cookie Security
+
+**MANDATORY:**
+- **ALWAYS** set `httpOnly: true` for authentication cookies
+- **ALWAYS** set `secure: true` in production
+- **ALWAYS** use appropriate `sameSite` settings:
+  - Access Token: `sameSite: 'lax'`
+  - Refresh Token: `sameSite: 'strict'`
+
+### Rate Limiting
+
+**MANDATORY:**
+- **ALWAYS** implement rate limiting for public endpoints
+- **ALWAYS** use IP-based rate limiting for email verification
+- **ALWAYS** implement blacklist for excessive requests
+
+### Input Validation
+
+**MANDATORY:**
+- **ALWAYS** validate ALL inputs using `class-validator`
+- **ALWAYS** use `ValidationPipe` with `whitelist: true` and `forbidNonWhitelisted: true`
+
+**FORBIDDEN:**
+- **NEVER** trust client input without validation
+
+---
+
+## Logging Best Practices
+
+### Log Levels
+
+**MANDATORY:**
+- **ALWAYS** use `logger.error()` for GLOBAL category errors (server errors)
+- **ALWAYS** use `logger.warn()` for BASE category errors (client errors)
+
+**FORBIDDEN:**
+- **NEVER** use `console.log` in production code
+
+### Log Context
+
+**MANDATORY:**
+- **ALWAYS** include error code, path, method, status code
+- **ALWAYS** include user ID if available
+- **ALWAYS** include IP and User-Agent
+- **ONLY** include request body/query in development environment
+
+---
+
+## Configuration Management
+
+### Environment Configuration
+
+**MANDATORY:**
+- **ALWAYS** use YAML files for configuration (`development.yaml`, `production.yaml`)
+- **ALWAYS** define configuration types using interfaces with `I` prefix
+- **ALWAYS** use `ConfigService` with typed interfaces
+
+**FORBIDDEN:**
+- **NEVER** hardcode configuration values
+
+### Type Safety
+
+**MANDATORY:**
+- **ALWAYS** use `IConfigKey` interface for configuration
+- **ALWAYS** use `getOrThrow()` for required configuration
+- **ALWAYS** provide default values where appropriate
+
+---
+
+## Common Utilities
+
+### RequestUtil
+
+**MANDATORY:**
+- **ALWAYS** use `RequestUtil.extractIp()` for IP extraction
+- **ALWAYS** consider proxy headers (`x-forwarded-for`, `x-real-ip`)
+
+**FORBIDDEN:**
+- **NEVER** duplicate IP extraction logic
+
+### Error Code Management
+
+**MANDATORY:**
+- **ALWAYS** define new error codes in `error-code.ts`
+- **ALWAYS** use `defineError()` factory function
+- **ALWAYS** categorize errors as `'GLOBAL'` or `'BASE'`
+- **ALWAYS** provide both client message and server message
+
+---
+
+## Module Implementation Status
+
+### Completed Modules ✅
+- **Auth Module**: Fully implemented with email verification, JWT tokens, rate limiting
+- **Channels Module**: Fully implemented with channel management, channel history, and subscription functionality
+  - Includes `SubscriptionService` and `SubscriptionsController` (endpoints: `/channels/subscriptions`)
+  - Includes `ChannelHistoriesService` for tracking channel metrics over time
+- **Tags Module**: Fully implemented with tag management and TagRelation support for CHANNEL type
+- **YouTube Module**: Fully implemented with API integration, key management, scheduler
+- **Public Module**: Fully implemented for unauthenticated access
+
+### Partially Implemented Modules 🚧
+- **Users Module**: Basic structure only
+- **References Module**: Basic structure only (Prisma model exists, basic CRUD implemented)
+
+### Missing Modules ❌
+- **Prompts Module**: Prisma model exists, module not created
+  - Note: `TaggableType` enum currently only has `REFERENCE` and `CHANNEL`
+  - `PROMPT` type needs to be added to `TaggableType` enum in Phase 6
+
+---
+
+## When Adding New Features
+
+### New Module Checklist
+
+**MANDATORY STEPS:**
+1. Create module directory: `modules/{feature}/`
+2. Create `{feature}.module.ts`, `{feature}.controller.ts`, `{feature}.service.ts`
+3. Create `dto/` directory with DTOs
+4. Add module to `app.module.ts` imports
+5. Create error codes if needed in `error-code.ts`
+6. Add Swagger documentation
+7. Create test files (`.spec.ts`)
+
+### New Endpoint Checklist
+
+**MANDATORY STEPS:**
+1. Add route handler in controller
+2. Add business logic in service
+3. Create/update DTOs
+4. Add `@ApiActionResponse()` or `@ApiGetResponse()` and `@ApiErrorResponses()`
+5. Add `@Public()` if endpoint is public
+6. Handle errors with `CustomException`
+7. Return standardized response format
+
+---
+
+## Code Review Checklist
+
+**BEFORE SUBMITTING CODE, VERIFY:**
+
+- ✅ All interfaces have `I` prefix
+- ✅ All database names use `snake_case`
+- ✅ All errors use `CustomException` with error codes
+- ✅ All responses follow standard format
+- ✅ No N+1 query problems
+- ✅ No `any` types (or minimal usage)
+- ✅ No `console.log` in production code
+- ✅ All imports use path aliases
+- ✅ All dependencies are `private readonly`
+- ✅ All public endpoints have `@Public()` decorator
+- ✅ All DTOs have validation decorators
+- ✅ All DTOs have JSDoc examples
+- ✅ All error codes are defined in `error-code.ts`
+- ✅ GET requests use Response DTOs
+- ✅ POST/PATCH/DELETE return `{ id?, message? }` or `{ count }`
+- ✅ Batch queries used for TagRelation
+- ✅ Pagination implemented for list endpoints
+
+---
+
+## Core Principles
+
+**REMEMBER:**
+
+1. **Type Safety First**: Use TypeScript's type system effectively - it's your primary defense against bugs
+2. **Consistency is Key**: Follow established patterns - consistency improves maintainability
+3. **Security Matters**: Never expose sensitive data - security is not optional
+4. **Performance Matters**: Avoid N+1 problems, use batch queries - performance impacts user experience
+5. **Maintainability Matters**: Write clear, documented code - future you will thank present you
+6. **Testability Matters**: Design for easy testing - testable code is maintainable code
+
+---
+
+## Quick Reference
+
+### Most Common Patterns
+
+**Error Handling:**
+```typescript
+throw new CustomException('USER_NOT_FOUND', { userId: '123' });
+```
+
+**Response DTO (GET):**
+```typescript
+export class ChannelResponseDto implements ChannelWithStringViewCount {
+  /** Channel ID @example 1 */
+  id: number;
+}
+```
+
+**Action Response (POST/PATCH/DELETE):**
+```typescript
+return { id: createdId, message: 'Created successfully.' };
+// or
+return { count: 3 }; // for bulk operations
+```
+
+**Batch Query:**
+```typescript
+const relations = await db.tagRelation.findMany({
+  where: { taggableId: { in: [1, 2, 3] } }
+});
+```
+
+**Dependency Injection:**
+```typescript
+constructor(
+  private readonly db: PrismaService,
+  private readonly configService: ConfigService<IConfigKey>
+) {}
+```
