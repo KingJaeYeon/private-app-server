@@ -22,7 +22,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     this.errorLoggingService.log(exception, request, errorResponse);
 
     // 클라이언트 응답 (안전한 정보만)
-    const { serverMessage, ...safeResponse } = errorResponse;
+    const { serverMessage, category, ...safeResponse } = errorResponse;
     response.status(safeResponse.statusCode).json(safeResponse);
   }
 
