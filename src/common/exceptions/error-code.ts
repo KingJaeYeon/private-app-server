@@ -110,7 +110,7 @@ export const GLOBAL_ERROR_CODES = {
 // TODO: i18n 적용 할땐 message: "error.user.not_found" 이런식으로 키값으로 변경해야함
 export const BASE_ERROR_CODES = {
   // ===== 인증 (AUTH) =====
-  INVALID_CREDENTIALS: defineError('AUTH-001', '이메일 또는 비밀번호가 올바르지 않습니다', HttpStatus.UNAUTHORIZED),
+  INVALID_CREDENTIALS: defineError('AUTH-001', '이메일 또는 비밀번호가 올바르지 않습니다', HttpStatus.BAD_REQUEST),
   INVALID_TOKEN: defineError('AUTH-002', '유효하지 않은 토큰입니다', HttpStatus.UNAUTHORIZED),
   TOKEN_EXPIRED: defineError('AUTH-003', '토큰이 만료되었습니다', HttpStatus.UNAUTHORIZED),
   REFRESH_TOKEN_EXPIRED: defineError('AUTH-004', '리프레시 토큰이 만료되었습니다', HttpStatus.UNAUTHORIZED),
