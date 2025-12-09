@@ -79,7 +79,7 @@ export class AuthController {
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response, @ClientInfo() info: IClientInfoData) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
     if (!refreshToken) {
-      throw new CustomException('FORBIDDEN');
+      throw new CustomException('INVALID_REFRESH_TOKEN');
     }
 
     const token = await this.authService.rotateRefreshToken(refreshToken, info.ip, info.userAgent);
