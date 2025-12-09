@@ -149,7 +149,7 @@ export class AuthService {
     });
 
     if (!storedToken) {
-      throw new CustomException('INVALID_TOKEN');
+      throw new CustomException('INVALID_REFRESH_TOKEN');
     }
 
     const invalidToken = storedToken.revokedAt || storedToken.expiredAt < new Date();
@@ -159,7 +159,7 @@ export class AuthService {
           where: { id: storedToken.id }
         })
         .then((r) => console.log('>> invalidToken:: delete', r.id));
-      throw new CustomException('REFRESH_TOKEN_EXPIRED');
+      throw new CustomException('INVALID_REFRESH_TOKEN');
     }
 
     await this.db.refreshToken.update({

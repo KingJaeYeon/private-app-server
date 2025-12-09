@@ -110,14 +110,15 @@ export const GLOBAL_ERROR_CODES = {
 // TODO: i18n 적용 할땐 message: "error.user.not_found" 이런식으로 키값으로 변경해야함
 export const BASE_ERROR_CODES = {
   // ===== 인증 (AUTH) =====
-  INVALID_CREDENTIALS: defineError('AUTH-001', '이메일 또는 비밀번호가 올바르지 않습니다', HttpStatus.UNAUTHORIZED),
-  INVALID_TOKEN: defineError('AUTH-002', '유효하지 않은 토큰입니다', HttpStatus.UNAUTHORIZED),
-  TOKEN_EXPIRED: defineError('AUTH-003', '토큰이 만료되었습니다', HttpStatus.UNAUTHORIZED),
-  REFRESH_TOKEN_EXPIRED: defineError('AUTH-004', '리프레시 토큰이 만료되었습니다', HttpStatus.UNAUTHORIZED),
-  REFRESH_TOKEN_REVOKED: defineError('AUTH-005', '리프레시 토큰이 취소되었습니다', HttpStatus.UNAUTHORIZED),
-  UNAUTHORIZED: defineError('AUTH-006', '인증이 필요합니다', HttpStatus.UNAUTHORIZED),
-  FORBIDDEN: defineError('AUTH-007', '접근 권한이 없습니다', HttpStatus.FORBIDDEN),
-  USER_DAILY_QUOTA_EXCEEDED: defineError('AUTH-008', '쿼터 사용량 초가', HttpStatus.UNAUTHORIZED),
+  INVALID_CREDENTIALS: defineError('AUTH-001', '이메일 또는 비밀번호가 올바르지 않습니다', HttpStatus.BAD_REQUEST),
+  UNAUTHORIZED: defineError('AUTH-002', 'ACCESS TOKEN ERROR', HttpStatus.UNAUTHORIZED),
+  INVALID_REFRESH_TOKEN: defineError(
+    'AUTH-003',
+    '리프레시 토큰이 만료됬거나 유효하지 않습니다.',
+    HttpStatus.UNAUTHORIZED
+  ),
+  FORBIDDEN: defineError('AUTH-004', '접근 권한이 없습니다', HttpStatus.FORBIDDEN),
+  USER_DAILY_QUOTA_EXCEEDED: defineError('AUTH-005', '쿼터 사용량 초가', HttpStatus.UNAUTHORIZED),
 
   // ===== 사용자 (USER) =====
   USER_NOT_FOUND: defineError('USER-001', '사용자를 찾을 수 없습니다', HttpStatus.NOT_FOUND),
