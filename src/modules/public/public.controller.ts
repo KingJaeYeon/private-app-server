@@ -6,7 +6,7 @@ import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { Public } from '@/common/decorators';
 import { PublicService } from '@/modules/public/public.service';
 import { ApiGetResponse } from '@/common/decorators/api-get-response.decorator';
-import { ChannelBaseResponseDto } from '@/modules/channels/dto';
+import { ChannelBaseResponseDto, ChannelHistoryResponseDto } from '@/modules/channels/dto';
 import { toResponseDto } from '@/common/helper/to-response-dto.helper';
 import { ApiErrorResponses } from '@/common/decorators/api-error-response.decorator';
 
@@ -26,15 +26,28 @@ export class PublicController {
     return toResponseDto(ChannelBaseResponseDto, channels);
   }
 
-  @Get('channels/:channelId')
+  @Get('channels/:id')
   @ApiGetResponse({
     type: ChannelBaseResponseDto,
     description: '공통 채널의 상세 정보를 조회합니다.',
     operations: { summary: '채널 상세 조회' }
   })
   @ApiErrorResponses(['CHANNEL_NOT_FOUND', 'FORBIDDEN'])
-  async getChannelDetail(@Param('channelId', ParseIntPipe) channelId: number): Promise<ChannelBaseResponseDto> {
-    const channel = this.publicService.getChannelById(channelId);
+  async getChannelDetail(@Param('id', ParseIntPipe) id: number): Promise<ChannelBaseResponseDto> {
+    const channel = this.publicService.getChannelById(id);
     return toResponseDto(ChannelBaseResponseDto, channel);
+  }
+
+  @Get('channels/:id/history')
+  @ApiGetResponse({
+    type: ChannelBaseResponseDto,
+    isArray: true,
+    description: '공통 채널의 history를 조회합니다.',
+    operations: { summary: '공통 채널의 history 조회' }
+  })
+  @ApiErrorResponses(['CHANNEL_NOT_FOUND', 'FORBIDDEN'])
+  async getChannelHistory(@Param('id', ParseIntPipe) id: number): Promise<ChannelHistoryResponseDto[]> {
+    const channelHistory = await this.publicService.getChannelHistoryById(id);
+    return toResponseDto(ChannelHistoryResponseDto, channelHistory);
   }
 }
