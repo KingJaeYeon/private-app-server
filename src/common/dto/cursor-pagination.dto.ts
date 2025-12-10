@@ -1,6 +1,6 @@
 // 공통 query dto
 import { IsInt, IsNumber, IsOptional, Max, Min } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 
 export class CursorPaginationDto {
   /** 배열 마지막 채널ID @example 19*/
@@ -22,7 +22,9 @@ export class CursorPaginationDto {
 
 export class CursorPaginationResponseDto {
   /** @example 19*/
+  @Expose()
   cursor: number | null;
   /** @example true*/
+  @Expose()
   hasNext: boolean;
 }
