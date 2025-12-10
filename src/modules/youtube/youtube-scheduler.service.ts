@@ -136,7 +136,7 @@ export class YoutubeSchedulerService {
 
       this.logger.log('✅ 채널 데이터 갱신 완료');
     } catch (error) {
-      throw error;
+      this.logger.error(`❌ 채널 데이터 갱신 실패 :${error}`);
     }
   }
 }
