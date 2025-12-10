@@ -42,7 +42,10 @@ export class YoutubeSchedulerService {
    * 당일 업데이트 안된 채널 데이터 갱신 (Cron)
    * Cron 표현식: '0 0 16 5 * *' (매일 16시 5분)
    */
-  @Timeout(0)
+  @Cron('0 0 16 5 * *', {
+    name: 'youtube-history',
+    timeZone: 'Asia/Seoul'
+  })
   async updateAllChannelsFromYouTube() {
     this.logger.log('🔄 채널 데이터 갱신 스케줄러 시작');
 
