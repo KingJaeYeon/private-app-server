@@ -2,7 +2,7 @@ import { Controller, Get, Param, Query, ParseIntPipe } from '@nestjs/common';
 import { ChannelsService } from './channels.service';
 import { ChannelHistoriesService } from './channel-histories.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { ChannelResponseDto, ChannelHistoryDto, ChannelAuthResponseDto } from './dto';
+import { ChannelResponseDto, ChannelHistoryResponseDto, ChannelAuthResponseDto } from './dto';
 import { ApiErrorResponses } from '@/common/decorators/api-error-response.decorator';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiGetResponse } from '@/common/decorators/api-get-response.decorator';
@@ -67,15 +67,15 @@ export class ChannelsController {
     return this.channelsService.getChannelById({ channelId, userId });
   }
 
-  @Get(':channelId/histories')
+  @Get(':channelId/history')
   @ApiGetResponse({
-    type: ChannelHistoryDto,
+    type: ChannelHistoryResponseDto,
     isArray: true,
     description: '채널 히스토리 조회 성공',
     operations: { summary: '채널 히스토리 조회', description: '특정 채널의 통계 히스토리를 시간순으로 조회합니다.' }
   })
   @ApiErrorResponses(['UNAUTHORIZED', 'CHANNEL_NOT_FOUND'])
-  async getChannelHistories(@Param('channelId', ParseIntPipe) channelId: number): Promise<ChannelHistoryDto[]> {
+  async getChannelHistories(@Param('channelId', ParseIntPipe) channelId: number): Promise<ChannelHistoryResponseDto[]> {
     return this.channelHistoriesService.getChannelHistories(channelId);
   }
 }

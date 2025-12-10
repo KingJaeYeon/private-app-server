@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { ChannelHistoryDto } from '@/modules/channels/dto';
+import { ChannelHistoryResponseDto } from '@/modules/channels/dto';
 
 @Injectable()
 export class ChannelHistoriesHelperService {
   /**
    * ChannelHistory 모델을 DTO로 변환
    */
-  mapHistoryToDto(history: any): ChannelHistoryDto {
+  mapHistoryToDto(history: any): ChannelHistoryResponseDto {
     return {
       id: history.id,
       channelId: history.channelId,
@@ -17,4 +17,3 @@ export class ChannelHistoriesHelperService {
     };
   }
 }
-
