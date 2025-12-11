@@ -34,20 +34,27 @@ export class UsersService {
   }
 
   async createUser(data: UserCreateInput) {
-    if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
-    }
+    const hashedPassword = data.password ? await bcrypt.hash(data.password, 10) : null;
+
     return this.db.user.create({
-      data,
-      select: { id: true, email: true }
+      data: {
+        ...data,
+        password: hashedPassword
+      }
     });
   }
 
+  // TODO: OAuth 할 때 수정필요
   async getOrCreateUser(data: UserCreateInput) {
-    const user = await this.db.user.findUnique({ where: { email: data.email } });
-    if (user) {
-      return user;
-    }
-    return this.db.user.create({ data });
+    const hashedPassword = data.password ? await bcrypt.hash(data.password, 10) : null;
+
+    return this.db.user.upsert({
+      where: { email: data.email },
+      update: {},
+      create: {
+        ...data,
+        password: hashedPassword
+      }
+    });
   }
 }
