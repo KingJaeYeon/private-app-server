@@ -16,7 +16,7 @@ export class UsersController {
     operations: { summary: '채널 상세 조회' }
   })
   async getCurrentUser(@CurrentUser('userId') userId: string) {
-    const user = await this.usersService.getUserByUserId(userId);
+    const user = await this.usersService.getUser({ id: userId });
     return toResponseDto(UserResponseDto, user);
   }
 }

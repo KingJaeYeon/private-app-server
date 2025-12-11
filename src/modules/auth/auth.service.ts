@@ -9,40 +9,34 @@ import { add } from 'date-fns';
 import type { Response } from 'express';
 import { SignUpDto } from '@/modules/auth/dto';
 import { AuthHelperService } from './auth-helper.service';
+import { UsersService } from '@/modules/users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
+    private readonly usersService: UsersService,
     private readonly db: PrismaService,
     private readonly helperService: AuthHelperService
   ) {}
 
   async validateUser(identifier: string, password: string): Promise<User> {
-    const user = await this.db.user.findFirst({
-      where: {
-        OR: [{ email: identifier }, { username: identifier }]
-      }
-    });
-    if (!user) {
-      throw new CustomException('INVALID_CREDENTIALS');
-    }
+    const user = await this.usersService.getUser({ identifier });
 
-    const isOAuth = user.password === null;
-    if (isOAuth) {
+    // OAuth User
+    if (user.password === null) {
       throw new CustomException('INVALID_CREDENTIALS');
     }
 
     // TODO: 사용자 상태 검증 ( 휴먼계정, 블랙리스트 등등)
     // TODO: Email 인증 여부
 
-    const authenticated = await bcrypt.compare(password, user.password as string);
+    const authenticated = await bcrypt.compare(password, user.password);
     if (!authenticated) {
       throw new CustomException('INVALID_CREDENTIALS');
     }
 
-    const { password: _, ...result } = user;
-    return result as User;
+    return user;
   }
 
   async verifyRefreshToken(refreshToken: string, userId: string) {}
@@ -56,23 +50,28 @@ export class AuthService {
       throw new CustomException('EMAIL_ALREADY_EXISTS');
     }
 
-    const latestVerification = await this.db.verification.findFirst({
-      where: { email: dto.email, type: 'EMAIL_VERIFICATION', expiredAt: { gt: new Date() } },
+    const validCode = await this.db.verification.findFirst({
+      where: {
+        email: dto.email,
+        type: 'EMAIL_VERIFICATION',
+        expiredAt: { gt: new Date() }
+      },
       orderBy: { createdAt: 'desc' }
     });
 
-    if (!(latestVerification && latestVerification.token === dto.verifyCode)) {
+    if (!validCode) {
       throw new CustomException('VERIFICATION_INVALID');
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-    return this.db.user.create({
-      data: {
-        email: dto.email,
-        password: hashedPassword,
-        username: dto.email.split('@')[0],
-        emailVerified: new Date()
-      }
+    if (validCode.token !== dto.verifyCode) {
+      throw new CustomException('VERIFICATION_INVALID');
+    }
+
+    return this.usersService.createUser({
+      email: dto.email,
+      password: dto.password,
+      username: dto.email.split('@')[0],
+      emailVerified: new Date()
     });
   }
 

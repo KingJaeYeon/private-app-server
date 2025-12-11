@@ -8,6 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { IConfigKey, IJWTConfig } from '@/config/config.interface';
 import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
 import { VerifyEmailService } from '@/modules/auth/verify-email.service';
+import { UsersModule } from '@/modules/users/users.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { VerifyEmailService } from '@/modules/auth/verify-email.service';
         };
       }
     }),
-    PassportModule
+    PassportModule,
+    UsersModule
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthHelperService, JwtStrategy, VerifyEmailService],
