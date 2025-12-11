@@ -24,20 +24,19 @@ export class AuthHelperService {
     res.cookie(AUTH_COOKIE.REFRESH, value ?? '', {
       ...base,
       sameSite: 'strict',
-      path: `/auth`,
+      path: `/`,
       expires
     });
   }
 
   private getCookieBaseOptions(): CookieOptions {
-    const { domain } = this.configService.getOrThrow<IAppConfig>('app');
-    const isProduction = process.env.NODE_ENV === 'production';
+    const { domain } = this.configService.getOrThrow('app');
+    const nodeEnv = this.configService.getOrThrow('nodeEnv');
 
     return {
       httpOnly: true,
-      secure: isProduction,
-      domain: isProduction ? domain : undefined
+      secure: nodeEnv === 'production',
+      domain: nodeEnv === 'production' ? domain : undefined
     };
   }
 }
-

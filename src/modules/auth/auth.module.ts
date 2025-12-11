@@ -17,9 +17,9 @@ import { VerifyEmailService } from '@/modules/auth/verify-email.service';
       useFactory: async (configService: ConfigService<IConfigKey>) => {
         const jwt: IJWTConfig = configService.getOrThrow('jwt');
         return {
-          secret: jwt.secret,
+          secret: jwt.authorization.secret,
           signOptions: {
-            expiresIn: jwt.expiresIn
+            expiresIn: jwt.authorization.expiresIn
           }
         };
       }
