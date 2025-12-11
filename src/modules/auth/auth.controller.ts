@@ -72,6 +72,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Public()
   @ApiActionResponse({
     body: { message: 'refresh token successfully.' },
     operations: { description: '리프레시 토큰 재발급' }

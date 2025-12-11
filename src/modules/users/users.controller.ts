@@ -1,7 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { UsersService } from '@/modules/users/users.service';
 import { ApiGetResponse } from '@/common/decorators/api-get-response.decorator';
-import { User } from '@generated/prisma/client';
 import { UserResponseDto } from '@/modules/users/dto/user.dto';
 import { CurrentUser } from '@/common/decorators';
 import { toResponseDto } from '@/common/helper/to-response-dto.helper';

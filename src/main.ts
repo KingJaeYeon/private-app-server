@@ -12,6 +12,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AUTH_COOKIE } from '@/common/constants/auth';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { TimingInterceptor } from '@/common/interceptors/timing.interceptor';
 
 const swaggerDescription = readFileSync(join(__dirname, 'docs/swagger-description.md'), 'utf8');
 
@@ -84,6 +85,8 @@ async function bootstrap() {
   });
 
   await app.listen(appConfig.port ?? 3000);
+
+  app.useGlobalInterceptors(new TimingInterceptor());
 
   console.log(`🚀 Server: http://localhost:${appConfig.port}`);
   console.log(`📚 Swagger: http://localhost:${appConfig.port}/swagger`);

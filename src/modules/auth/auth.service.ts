@@ -36,14 +36,16 @@ export class AuthService {
     // TODO: 사용자 상태 검증 ( 휴먼계정, 블랙리스트 등등)
     // TODO: Email 인증 여부
 
-    const isPasswordValid = await bcrypt.compare(password, user.password as string);
-    if (!isPasswordValid) {
+    const authenticated = await bcrypt.compare(password, user.password as string);
+    if (!authenticated) {
       throw new CustomException('INVALID_CREDENTIALS');
     }
 
     const { password: _, ...result } = user;
     return result as User;
   }
+
+  async verifyRefreshToken(refreshToken: string, userId: string) {}
 
   async signUp(dto: SignUpDto) {
     const user = await this.db.user.findUnique({
@@ -85,7 +87,7 @@ export class AuthService {
   }) {
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = Math.random().toString(36).slice(2, 13);
-
+    console.log('new:', refreshToken);
     await this.db.refreshToken.create({
       data: {
         token: refreshToken,
@@ -172,6 +174,6 @@ export class AuthService {
       userId: storedToken.userId
     };
 
-    return this.generateJwtTokens({ payload, ipAddress, userAgent });
+    return await this.generateJwtTokens({ payload, ipAddress, userAgent });
   }
 }

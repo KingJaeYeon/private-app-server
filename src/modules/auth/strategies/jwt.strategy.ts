@@ -16,12 +16,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const jwt: IJWTConfig = configService.getOrThrow('jwt');
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req) => req?.cookies[AUTH_COOKIE.ACCESS] || null, // 쿠키에서 추출
-        ExtractJwt.fromAuthHeaderAsBearerToken(), // Authorization 헤더에서 추출
-        ExtractJwt.fromUrlQueryParameter('token') // URL 쿼리 파라미터에서 추출
+        (req) => req?.cookies[AUTH_COOKIE.ACCESS] // 쿠키에서 추출
+        // ExtractJwt.fromAuthHeaderAsBearerToken(), // Authorization 헤더에서 추출
+        // ExtractJwt.fromUrlQueryParameter('token') // URL 쿼리 파라미터에서 추출
       ]),
       ignoreExpiration: false,
-      secretOrKey: jwt.secret
+      secretOrKey: jwt.authorization.secret
     });
   }
 

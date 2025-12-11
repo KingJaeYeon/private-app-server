@@ -1,8 +1,11 @@
+import type ms from 'ms';
+
 export interface IConfigKey {
   db: IDbConfig;
   app: IAppConfig;
   jwt: IJWTConfig;
   apikey: IApiKeyConfig;
+  nodeEnv: string;
 }
 
 export interface IDbConfig {
@@ -11,8 +14,14 @@ export interface IDbConfig {
 }
 
 export interface IJWTConfig {
-  secret: string;
-  expiresIn: number;
+  authorization: {
+    secret: string;
+    expiresIn: ms.StringValue | number;
+  };
+  refresh: {
+    secret: string;
+    expiresIn: ms.StringValue | number;
+  };
 }
 
 export interface IAppConfig {
