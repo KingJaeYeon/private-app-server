@@ -22,7 +22,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   handleRequest(err: any, user: any, info: any) {
-    // You can throw an exception based on either "info" or "err" arguments
     if (info instanceof TokenExpiredError) {
       throw new CustomException('UNAUTHORIZED', { message: 'jwt expired' });
     }
