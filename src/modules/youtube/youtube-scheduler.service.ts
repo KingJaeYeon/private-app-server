@@ -46,6 +46,7 @@ export class YoutubeSchedulerService {
     name: 'youtube-history',
     timeZone: 'Asia/Seoul'
   })
+  // @Timeout(0)
   async updateAllChannelsFromYouTube() {
     this.logger.log('🔄 채널 데이터 갱신 스케줄러 시작');
 

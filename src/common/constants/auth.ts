@@ -1,6 +1,6 @@
 export const AUTH_COOKIE = {
-  ACCESS: 'access_token',
-  REFRESH: 'refresh_token'
+  ACCESS: 'Authorization',
+  REFRESH: 'refresh'
 } as const;
 
 export const AUTH_HEADER = {
