@@ -19,7 +19,6 @@ export interface IJWTConfig {
     expiresIn: ms.StringValue | number;
   };
   refresh: {
-    secret: string;
     expiresIn: ms.StringValue | number;
   };
 }

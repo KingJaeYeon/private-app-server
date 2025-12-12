@@ -12,9 +12,8 @@ app:
 jwt:
   access:
     secret: "f3MRhlKGV6cC4uk5df2iiUN0atlCVgoR"
-    expiresIn: "5m"
+    expiresIn: "5s"
   refresh:
-    secret: "0I65KnEccbNla7mvm2BmP1Ndbc6mARSF"
     expiresIn: "7d"
 
 apikey:

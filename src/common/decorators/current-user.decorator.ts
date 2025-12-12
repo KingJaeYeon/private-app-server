@@ -1,5 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { IJwtPayload } from '@/modules/auth/strategies/jwt.strategy';
+
+import { IJwtPayload } from '@/common/interface/jwt.interface';
 
 /**
  * @example

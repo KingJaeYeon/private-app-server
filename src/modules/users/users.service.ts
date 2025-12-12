@@ -33,6 +33,10 @@ export class UsersService {
     return this.db.user.findMany({ where: query });
   }
 
+  async findByEmail(email: string): Promise<User | null> {
+    return this.db.user.findUnique({ where: { email } });
+  }
+
   async createUser(data: UserCreateInput) {
     const hashedPassword = data.password ? await bcrypt.hash(data.password, 10) : null;
 

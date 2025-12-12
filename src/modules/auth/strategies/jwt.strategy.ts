@@ -4,10 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { IConfigKey, IJWTConfig } from '@/config/config.interface';
 import { AUTH_COOKIE } from '@/common/constants/auth';
-
-export interface IJwtPayload {
-  userId: string;
-}
+import { IJwtPayload } from '@/common/interface/jwt.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -27,7 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: IJwtPayload) {
     // payload 검증 후 req.user에 저장
     return {
-      userId: payload.userId,
+      userId: payload.userId
     };
   }
 }
