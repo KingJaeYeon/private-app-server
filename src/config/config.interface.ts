@@ -14,7 +14,7 @@ export interface IDbConfig {
 }
 
 export interface IJWTConfig {
-  authorization: {
+  access: {
     secret: string;
     expiresIn: ms.StringValue | number;
   };

@@ -10,7 +10,7 @@ app:
 
 
 jwt:
-  authorization:
+  access:
     secret: "f3MRhlKGV6cC4uk5df2iiUN0atlCVgoR"
     expiresIn: "5m"
   refresh:

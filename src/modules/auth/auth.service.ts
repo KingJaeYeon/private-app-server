@@ -10,6 +10,7 @@ import type { Response } from 'express';
 import { SignUpDto } from '@/modules/auth/dto';
 import { AuthHelperService } from './auth-helper.service';
 import { UsersService } from '@/modules/users/users.service';
+import { TokenService } from '@/modules/auth/token.service';
 
 @Injectable()
 export class AuthService {
@@ -17,7 +18,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
     private readonly db: PrismaService,
-    private readonly helperService: AuthHelperService
+    private readonly helperService: AuthHelperService,
+    private readonly tokenService: TokenService
   ) {}
 
   async validateUser(identifier: string, password: string): Promise<User> {
@@ -84,9 +86,8 @@ export class AuthService {
     userAgent: string;
     ipAddress: string;
   }) {
-    const accessToken = this.jwtService.sign(payload);
-    const refreshToken = Math.random().toString(36).slice(2, 13);
-    console.log('new:', refreshToken);
+    const { accessToken, refreshToken } = this.tokenService.generateToken(payload);
+
     await this.db.refreshToken.create({
       data: {
         token: refreshToken,
@@ -169,7 +170,6 @@ export class AuthService {
     });
 
     const payload: IJwtPayload = {
-      email: storedToken.user.email,
       userId: storedToken.userId
     };
 

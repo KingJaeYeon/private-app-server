@@ -7,7 +7,6 @@ import { AUTH_COOKIE } from '@/common/constants/auth';
 
 export interface IJwtPayload {
   userId: string;
-  email: string;
 }
 
 @Injectable()
@@ -21,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         // ExtractJwt.fromUrlQueryParameter('token') // URL 쿼리 파라미터에서 추출
       ]),
       ignoreExpiration: false,
-      secretOrKey: jwt.authorization.secret
+      secretOrKey: jwt.access.secret
     });
   }
 
@@ -29,7 +28,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // payload 검증 후 req.user에 저장
     return {
       userId: payload.userId,
-      email: payload.email
     };
   }
 }

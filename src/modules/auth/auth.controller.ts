@@ -36,7 +36,7 @@ export class AuthController {
   ) {
     const { id, email } = await this.authService.validateUser(dto.identifier, dto.password);
     const token = await this.authService.generateJwtTokens({
-      payload: { userId: id, email },
+      payload: { userId: id },
       userAgent: info.userAgent,
       ipAddress: info.ip
     });
@@ -62,7 +62,7 @@ export class AuthController {
   ) {
     const { id, email } = await this.authService.signUp(dto);
     const token = await this.authService.generateJwtTokens({
-      payload: { userId: id, email },
+      payload: { userId: id },
       userAgent: info.userAgent,
       ipAddress: info.ip
     });
