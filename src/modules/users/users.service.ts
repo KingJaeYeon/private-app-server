@@ -61,4 +61,42 @@ export class UsersService {
       }
     });
   }
+
+  async getUserState(userId: string) {
+    const user = await this.db.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        createdAt: true,
+        username: true,
+        emailVerified: true,
+        email: true,
+        profileIcon: true,
+        account: {
+          where: {
+            deletedAt: null
+          },
+          select: {
+            provider: true
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      throw new CustomException('USER_NOT_FOUND');
+    }
+
+    const { account, ...other } = user;
+    let oAuthType = 'LOCAL';
+
+    if (account.length > 0) {
+      oAuthType = account[0].provider;
+    }
+
+    return {
+      ...other,
+      oAuthType
+    };
+  }
 }

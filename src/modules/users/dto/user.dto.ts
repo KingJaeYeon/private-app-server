@@ -16,4 +16,6 @@ export class UserResponseDto implements Partial<User> {
   profileIcon: string;
   @Expose()
   createdAt: Date;
+  @Expose()
+  oAuthType: string;
 }
