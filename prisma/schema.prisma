@@ -47,7 +47,7 @@ model User {
 model Account {
   id                Int       @default(autoincrement())
   userId            String
-  provider          String
+  provider          Provider
   providerAccoundId String    @map("provider_accoundId")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -238,36 +238,6 @@ model Subscription {
   @@map("subscriptions")
 }
 
-enum VerificationType {
-  EMAIL_VERIFICATION // 회원가입 이메일 인증
-  PASSWORD_RESET // 비밀번호 재설정
-  EMAIL_CHANGE // 이메일 변경
-  TWO_FACTOR // 2FA 코드
-}
-
-enum UserStatus {
-  PENDING // 대기 중 (승인 대기 등)
-  ACTIVE // 활성 사용자
-  REJECTED // 승인이 거절된 사용자
-  BLOCKED // 차단된 사용자
-  DORMANT // 휴면 사용자
-}
-
-enum UserRole {
-  ADMIN
-  USER
-}
-
-enum TaggableType {
-  REFERENCE
-  CHANNEL
-}
-
-enum ApiKeyType {
-  USER // 유저 API 키
-  SERVER // 관리자(서버) API 키
-}
-
 // YouTube API 키 (통합)
 model ApiKey {
   id        Int        @id @default(autoincrement())
@@ -307,4 +277,38 @@ model ServerApiKeyUsage {
   @@index([userId, date]) // 유저별 일일 사용량 조회
   @@index([apiKeyId, date]) // 키별 일일 사용량 조회
   @@map("server_api_key_usages")
+}
+
+enum VerificationType {
+  EMAIL_VERIFICATION // 회원가입 이메일 인증
+  PASSWORD_RESET // 비밀번호 재설정
+  EMAIL_CHANGE // 이메일 변경
+  TWO_FACTOR // 2FA 코드
+}
+
+enum UserStatus {
+  PENDING // 대기 중 (승인 대기 등)
+  ACTIVE // 활성 사용자
+  REJECTED // 승인이 거절된 사용자
+  BLOCKED // 차단된 사용자
+  DORMANT // 휴면 사용자
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum TaggableType {
+  REFERENCE
+  CHANNEL
+}
+
+enum ApiKeyType {
+  USER // 유저 API 키
+  SERVER // 관리자(서버) API 키
+}
+
+enum Provider {
+  GOOGLE
 }
