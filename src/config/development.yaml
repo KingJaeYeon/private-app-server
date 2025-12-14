@@ -12,7 +12,6 @@ app:
   front: "http://localhost:3000"
   domain: ".test.com"
 
-
 jwt:
   access:
     secret: "f3MRhlKGV6cC4uk5df2iiUN0atlCVgoR"

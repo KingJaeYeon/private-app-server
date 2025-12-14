@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { IConfigKey, IJWTConfig } from '@/config/config.interface';
 import * as crypto from 'crypto';
 import { add } from 'date-fns';
-import { TokenMetadata, TokenPair } from '@/common/interface/jwt.interface';
+import { TokenMetadata } from '@/common/interface/jwt.interface';
 import { CustomException } from '@/common/exceptions';
 
 @Injectable()

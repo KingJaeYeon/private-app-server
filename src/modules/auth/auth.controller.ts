@@ -79,31 +79,32 @@ export class AuthController {
     return { id, message: 'sign In successfully.' };
   }
 
-  @Post('sign-up')
-  @ApiActionResponse({
-    body: { id: 'userId', message: 'sign up successfully.' },
-    headers,
-    operations: { summary: '회원가입', description: '회원가입 성공' }
-  })
-  @ApiErrorResponses(['EMAIL_ALREADY_EXISTS', 'VERIFICATION_INVALID'])
-  async signup(
-    @Body() dto: SignUpDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @ClientInfo() info: IClientInfoData
-  ) {
-    const { id } = await this.authService.signUp(dto);
-    const token = await this.tokenService.generateTokenPair(id, {
-      userAgent: info.userAgent,
-      ipAddress: info.ip
-    });
-    const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
-    if (refreshToken) {
-      await this.tokenService.revokeRefreshToken(refreshToken);
-    }
-    this.cookieService.setTokenPair(res, token);
-    return { id, message: 'sign up successfully.' };
-  }
+  //
+  // @Post('sign-up')
+  // @ApiActionResponse({
+  //   body: { id: 'userId', message: 'sign up successfully.' },
+  //   headers,
+  //   operations: { summary: '회원가입', description: '회원가입 성공' }
+  // })
+  // @ApiErrorResponses(['EMAIL_ALREADY_EXISTS', 'VERIFICATION_INVALID'])
+  // async signup(
+  //   @Body() dto: SignUpDto,
+  //   @Req() req: Request,
+  //   @Res({ passthrough: true }) res: Response,
+  //   @ClientInfo() info: IClientInfoData
+  // ) {
+  //   const { id } = await this.authService.signUp(dto);
+  //   const token = await this.tokenService.generateTokenPair(id, {
+  //     userAgent: info.userAgent,
+  //     ipAddress: info.ip
+  //   });
+  //   const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
+  //   if (refreshToken) {
+  //     await this.tokenService.revokeRefreshToken(refreshToken);
+  //   }
+  //   this.cookieService.setTokenPair(res, token);
+  //   return { id, message: 'sign up successfully.' };
+  // }
 
   @Post('refresh')
   @ApiActionResponse({
@@ -142,13 +143,12 @@ export class AuthController {
 
   @Post('request-email-verification')
   @ApiActionResponse({
-    operations: { description: '인증 이메일 발송' },
+    operations: { description: '회원가입 인증 이메일 발송' },
     body: { message: 'Verification email sent' }
   })
   @CheckBlacklist()
   async requestEmailVerification(@Body() dto: RequestEmailVerificationDto, @ClientInfo() { ip }: IClientInfoData) {
-    await this.verifyEmailService.requestEmailVerification(dto, ip);
-    return { message: 'Verification email sent' };
+    return this.verifyEmailService.requestEmailVerification(dto, ip);
   }
 
   @Post('verify-email')
@@ -156,12 +156,22 @@ export class AuthController {
     operations: { description: '이메일 인증 성공' },
     body: { message: 'Email verified' }
   })
-  async verifyEmail(@Body() dto: VerifyEmailDto) {
-    await this.verifyEmailService.verifyEmailCode(dto.email, dto.token);
-    return { message: 'Email verified' };
+  async verifyEmail(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body() dto: VerifyEmailDto,
+    @ClientInfo() info: IClientInfoData
+  ) {
+    const { id } = await this.verifyEmailService.verifyEmail(dto.email, dto.token);
+    const token = await this.tokenService.generateTokenPair(id, {
+      userAgent: info.userAgent,
+      ipAddress: info.ip
+    });
+    const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
+    if (refreshToken) {
+      await this.tokenService.revokeRefreshToken(refreshToken);
+    }
+    this.cookieService.setTokenPair(res, token);
+    return { id, message: 'sign up successfully.' };
   }
-
-  async googleLogin() {}
-
-  async googleLoginCallback() {}
 }

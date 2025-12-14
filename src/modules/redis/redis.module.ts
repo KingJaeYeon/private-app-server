@@ -20,6 +20,7 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
       },
       inject: [ConfigService]
     }
-  ]
+  ],
+  exports: [REDIS_CLIENT]
 })
 export class RedisModule {}

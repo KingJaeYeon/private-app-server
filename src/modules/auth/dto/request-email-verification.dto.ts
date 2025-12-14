@@ -14,6 +14,8 @@ export class VerifyEmailDto {
   /** 이메일 @example  "user@example.com" */
   @IsEmail()
   email: string;
+
   /** 인증코드 @example  "tedsa"*/
+  @IsString()
   token: string;
 }
