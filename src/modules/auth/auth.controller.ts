@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthService } from '@/modules/auth/auth.service';
 import type { Request, Response } from 'express';
 import { CheckBlacklist, ClientInfo, Public } from '@/common/decorators';
@@ -11,6 +11,9 @@ import { ApiActionResponse, headers } from '@/common/decorators/api-action-respo
 import { ApiErrorResponses } from '@/common/decorators/api-error-response.decorator';
 import { TokenService } from '@/modules/auth/token.service';
 import { CookieService } from '@/modules/auth/cookie.service';
+import { GoogleAuthGuard } from '@/modules/auth/guards/google-auth.guard';
+import { ConfigService } from '@nestjs/config';
+import { IAppConfig } from '@/config/config.interface';
 
 @Public()
 @Controller('auth')
@@ -19,8 +22,33 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly verifyEmailService: VerificationService,
     private readonly tokenService: TokenService,
-    private readonly cookieService: CookieService
+    private readonly cookieService: CookieService,
+    private readonly configService: ConfigService
   ) {}
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuth(): Promise<void> {
+    console.log('call google auth page');
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuthCallback(@Req() req, @Res() res: Response, @ClientInfo() info: IClientInfoData): Promise<void> {
+    const token = await this.tokenService.generateTokenPair(req.user.id, {
+      userAgent: info.userAgent,
+      ipAddress: info.ip
+    });
+
+    const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
+    if (refreshToken) {
+      await this.tokenService.revokeRefreshToken(refreshToken);
+    }
+
+    this.cookieService.setTokenPair(res, token);
+    const app: IAppConfig = await this.configService.getOrThrow('app');
+    res.redirect(app.front);
+  }
 
   @ApiActionResponse({
     body: { id: 'userId', message: 'sign In successfully.' },

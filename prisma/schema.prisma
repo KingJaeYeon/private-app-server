@@ -48,14 +48,14 @@ model Account {
   id                Int       @default(autoincrement())
   userId            String
   provider          Provider
-  providerAccoundId String    @map("provider_accoundId")
+  providerAccountId String    @map("provider_accoundId")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt         DateTime? @map("deleted_at")
 
   user User @relation(fields: [userId], references: [id])
 
-  @@unique([provider, providerAccoundId])
+  @@unique([provider, providerAccountId])
   @@map("accounts")
 }
 

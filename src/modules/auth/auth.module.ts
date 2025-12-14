@@ -8,11 +8,12 @@ import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
 import { VerificationService } from '@/modules/auth/verification.service';
 import { UsersModule } from '@/modules/users/users.module';
 import { TokenService } from '@/modules/auth/token.service';
+import { GoogleStrategy } from '@/modules/auth/strategies/google.strategy';
 
 @Module({
   imports: [JwtModule, PassportModule, UsersModule],
   controllers: [AuthController],
-  providers: [AuthService, CookieService, JwtStrategy, VerificationService, TokenService],
+  providers: [AuthService, CookieService, JwtStrategy, GoogleStrategy, VerificationService, TokenService],
   exports: [AuthService]
 })
 export class AuthModule {}

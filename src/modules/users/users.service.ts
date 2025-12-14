@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/core/prisma.service';
-import { User } from '@generated/prisma/client';
+import { Provider, User } from '@generated/prisma/client';
 import { CustomException } from '@/common/exceptions';
 import { UserCreateInput, UserWhereInput, UserWhereUniqueInput } from '@generated/prisma/models/User';
 import * as bcrypt from 'bcrypt';
@@ -49,15 +49,27 @@ export class UsersService {
   }
 
   // TODO: OAuth 할 때 수정필요
-  async getOrCreateUser(data: UserCreateInput) {
-    const hashedPassword = data.password ? await bcrypt.hash(data.password, 10) : null;
-
+  async getOrCreateOAuthUser(params: {
+    profileUrl?: string;
+    email: string;
+    provider: Provider;
+    providerId: string;
+    username?: string;
+  }) {
     return this.db.user.upsert({
-      where: { email: data.email },
+      where: { email: params.email },
       update: {},
       create: {
-        ...data,
-        password: hashedPassword
+        email: params.email,
+        emailVerified: new Date(),
+        username: params.username,
+        profileIcon: params.profileUrl,
+        account: {
+          create: {
+            provider: params.provider,
+            providerAccountId: params.providerId
+          }
+        }
       }
     });
   }

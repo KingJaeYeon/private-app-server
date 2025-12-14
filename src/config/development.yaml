@@ -18,3 +18,7 @@ jwt:
 
 apikey:
   youtube: "AIzaSyDDe44x6EkzF2V0QOD1gecv929QSjD0dS4"
+  google:
+    clientId: "1030446705369-qi9ci2pap83qve807rcfrt1fjngkj0k6.apps.googleusercontent.com"
+    secret: "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"
+    callbackURL: "http://localhost:3500/auth/google/callback"

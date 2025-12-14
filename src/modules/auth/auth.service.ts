@@ -38,22 +38,22 @@ export class AuthService {
       throw new CustomException('EMAIL_ALREADY_EXISTS');
     }
 
-    const validCode = await this.db.verification.findFirst({
-      where: {
-        email: dto.email,
-        type: 'EMAIL_VERIFICATION',
-        expiredAt: { gt: new Date() }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    if (!validCode) {
-      throw new CustomException('VERIFICATION_INVALID');
-    }
-
-    if (validCode.token !== dto.verifyCode) {
-      throw new CustomException('VERIFICATION_INVALID');
-    }
+    // const validCode = await this.db.verification.findFirst({
+    //   where: {
+    //     email: dto.email,
+    //     type: 'EMAIL_VERIFICATION',
+    //     expiredAt: { gt: new Date() }
+    //   },
+    //   orderBy: { createdAt: 'desc' }
+    // });
+    //
+    // if (!validCode) {
+    //   throw new CustomException('VERIFICATION_INVALID');
+    // }
+    //
+    // if (validCode.token !== dto.verifyCode) {
+    //   throw new CustomException('VERIFICATION_INVALID');
+    // }
 
     return this.usersService.createUser({
       email: dto.email,

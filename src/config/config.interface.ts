@@ -31,4 +31,9 @@ export interface IAppConfig {
 
 export interface IApiKeyConfig {
   youtube: string;
+  google: {
+    clientId: string;
+    secret: string;
+    callbackURL: string;
+  };
 }
