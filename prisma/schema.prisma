@@ -59,20 +59,6 @@ model Account {
   @@map("accounts")
 }
 
-model Verification {
-  id        Int              @id @default(autoincrement())
-  type      VerificationType
-  email     String
-  ip        String?
-  token     String
-  expiredAt DateTime         @map("expired_at")
-  createdAt DateTime         @default(now()) @map("created_at")
-
-  @@unique([type, email, token])
-  @@index([expiredAt]) // 만료된 토큰 정리용
-  @@map("verifications")
-}
-
 model Blacklist {
   id        Int       @id @default(autoincrement())
   ip        String
@@ -277,13 +263,6 @@ model ServerApiKeyUsage {
   @@index([userId, date]) // 유저별 일일 사용량 조회
   @@index([apiKeyId, date]) // 키별 일일 사용량 조회
   @@map("server_api_key_usages")
-}
-
-enum VerificationType {
-  EMAIL_VERIFICATION // 회원가입 이메일 인증
-  PASSWORD_RESET // 비밀번호 재설정
-  EMAIL_CHANGE // 이메일 변경
-  TWO_FACTOR // 2FA 코드
 }
 
 enum UserStatus {
