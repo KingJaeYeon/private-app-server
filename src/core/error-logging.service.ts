@@ -14,6 +14,11 @@ export class ErrorLoggingService {
   log(exception: unknown, request: Request, errorResponse: IErrorResponse) {
     const { code, message } = errorResponse;
 
+    if (code === 'AUTH-002') {
+      // ACCESS 토큰 에러 - AUTH-002
+      return;
+    }
+
     // 로깅용 컨텍스트 생성
     const logContext = this.buildLogContext(exception, request, errorResponse);
 
