@@ -58,10 +58,17 @@ export class UsersService {
   }) {
     return this.db.user.upsert({
       where: { email: params.email },
-      update: {},
+      update: {
+        account: {
+          create: {
+            provider: params.provider,
+            providerAccountId: params.providerId
+          }
+        }
+      },
       create: {
         email: params.email,
-        emailVerified: new Date(),
+        emailVerified: true,
         username: params.username,
         profileIcon: params.profileUrl,
         account: {

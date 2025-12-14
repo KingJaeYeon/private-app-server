@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { CoreModule } from '@/core/core.module';
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { UsersModule } from '@/modules/users/users.module';
 import { AuthModule } from '@/modules/auth/auth.module';
@@ -18,6 +18,7 @@ import { ChannelsModule } from '@/modules/channels/channels.module';
 import { ReferencesModule } from './modules/references/references.module';
 import { PublicModule } from './modules/public/public.module';
 import { TimingInterceptor } from '@/common/interceptors/timing.interceptor';
+import { RedisModule } from './modules/redis/redis.module';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -36,7 +37,8 @@ const isDev = process.env.NODE_ENV === 'development';
     ChannelsModule,
     ReferencesModule,
     YoutubeModule,
-    PublicModule
+    PublicModule,
+    RedisModule
   ],
   controllers: [AppController],
   providers: [
@@ -47,7 +49,19 @@ const isDev = process.env.NODE_ENV === 'development';
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     { provide: APP_INTERCEPTOR, useClass: YoutubeApiUsageInterceptor },
-    { provide: APP_INTERCEPTOR, useClass: TimingInterceptor }
+    { provide: APP_INTERCEPTOR, useClass: TimingInterceptor },
+    {
+      provide: APP_PIPE,
+      useFactory: () =>
+        new ValidationPipe({
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          transform: true,
+          transformOptions: {
+            enableImplicitConversion: true
+          }
+        })
+    }
   ]
 })
 export class AppModule {}

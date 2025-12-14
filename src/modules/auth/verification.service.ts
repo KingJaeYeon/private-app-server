@@ -3,26 +3,33 @@ import { CustomException } from '@/common/exceptions';
 import { addMinutes, subMinutes } from 'date-fns';
 import { Injectable } from '@nestjs/common';
 import crypto from 'crypto';
+import { RequestEmailVerificationDto } from '@/modules/auth/dto';
+import { UsersService } from '@/modules/users/users.service';
+import * as bcrypt from 'bcrypt';
+import { randomStringGenerator } from '@nestjs/common/utils/random-string-generator.util';
 
 @Injectable()
 export class VerificationService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    private readonly userService: UsersService
+  ) {}
   // Rate Limiting 설정
   private readonly MAX_ATTEMPTS_PER_5MIN = 5;
   private readonly TOKEN_EXPIRY_MINUTES = 30;
 
-  async requestEmailVerification(email: string, ip: string) {
-    // 1. 이미 인증하고 가입한 유저인지 체크
-    const user = await this.db.user.findUnique({ where: { email } });
-    if (user?.emailVerified) {
+  async requestEmailVerification(data: RequestEmailVerificationDto, ip: string) {
+    const { email, password } = data;
+
+    const existingEmail = await this.userService.findByEmail(email);
+    if (existingEmail) {
       throw new CustomException('EMAIL_ALREADY_EXISTS');
     }
 
     // 2. IP 기반 Rate Limiting 체크
-    await this.checkRateLimit(ip);
-
+    const hashing = await bcrypt.hash(password, 10);
+    const token = randomStringGenerator();
     // 3. 새 인증 토큰 생성
-    const token = crypto.randomBytes(3).toString('hex').toUpperCase();
     const expiredAt = addMinutes(new Date(), this.TOKEN_EXPIRY_MINUTES);
 
     // await this.db.verification.create({

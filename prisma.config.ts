@@ -12,7 +12,7 @@ const YAML_CONFIG_FILENAME = `./src/config/${process.env.NODE_ENV}.yaml`;
 const url = () => {
   const file = readFileSync(join(__dirname, YAML_CONFIG_FILENAME), 'utf8');
   const config = yaml.load(file) as Record<string, any>;
-  return `${config['db'].postgresql}?schema=${config['db'].schema}`;
+  return `${config['db'].postgresql.url}?schema=${config['db'].postgresql.schema}`;
 };
 
 export default defineConfig({

@@ -1,6 +1,10 @@
 db:
-  postgresql: "postgresql://postgres:1234@localhost:5432/mydb"
-  schema: "privateapp"
+  postgresql:
+    url: "postgresql://postgres:1234@localhost:5432/mydb"
+    schema: "privateapp"
+  redis:
+    host: "localhost"
+    port: 6379
 
 
 app:

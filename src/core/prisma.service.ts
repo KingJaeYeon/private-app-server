@@ -11,7 +11,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   constructor(configService: ConfigService<IConfigKey>) {
     const dbConfig: IDbConfig = configService.getOrThrow('db');
 
-    const pool = new PrismaPg({ connectionString: dbConfig.postgresql }, { schema: dbConfig.schema });
+    const pool = new PrismaPg({ connectionString: dbConfig.postgresql.url }, { schema: dbConfig.postgresql.schema });
     super({
       adapter: pool
       // log: ['query', 'info', 'warn', 'error']

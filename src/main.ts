@@ -47,37 +47,6 @@ async function bootstrap() {
     yamlDocumentUrl: 'swagger/yaml'
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // DTO에 정의된 프로퍼티만 허용 → 정의되지 않은 값 제거
-      forbidNonWhitelisted: true, // whitelist에서 걸러진 “불필요 필드”가 존재하면 요청 자체를 거부 (보안성 ↑)
-      transform: true, // 요청 데이터 타입을 DTO에 맞게 자동 변환 -> string → number 변환 등
-      transformOptions: {
-        enableImplicitConversion: true // DTO에서 암시적으로 타입 변환 허용
-      },
-      /**
-       * ValidationPipe 가 오류를 생성할 때
-       * 커스텀 HttpException 형태로 변환
-       */
-      exceptionFactory: (errors) => {
-        const messages = errors.map((error) => ({
-          field: error.property,
-          constraints: Object.values(error.constraints || {})
-        }));
-
-        return new HttpException(
-          {
-            success: false,
-            code: ERROR_CODES.VALIDATION_ERROR.code,
-            message: ERROR_CODES.VALIDATION_ERROR.message,
-            details: messages
-          },
-          HttpStatus.BAD_REQUEST
-        );
-      }
-    })
-  );
-
   // CORS 설정 (클라이언트 도메인만 허용)
   app.enableCors({
     origin: [appConfig.front].filter(Boolean),

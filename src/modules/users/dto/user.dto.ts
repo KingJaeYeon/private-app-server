@@ -7,7 +7,7 @@ export class UserResponseDto implements Partial<User> {
   @Expose()
   email: string;
   @Expose()
-  emailVerified: Date;
+  emailVerified: boolean;
   @Expose()
   username: string;
   @Expose()

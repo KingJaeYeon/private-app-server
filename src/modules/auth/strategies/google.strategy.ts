@@ -24,9 +24,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   }
 
   async validate(accessToken: string, refreshToken: string, profile: Profile) {
-    const { id, emails, profileUrl } = profile;
-
-    const email = emails?.[0]?.value;
+    const { _json } = profile;
+    const email = _json.email;
 
     if (!email) {
       throw new CustomException('NOT_FOUND');
@@ -36,8 +35,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       email,
       username: email.split('@')[0],
       provider: Provider.GOOGLE,
-      providerId: id,
-      profileUrl
+      providerId: _json.sub,
+      profileUrl: _json.picture
     });
   }
 

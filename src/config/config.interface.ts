@@ -9,8 +9,14 @@ export interface IConfigKey {
 }
 
 export interface IDbConfig {
-  postgresql: string;
-  schema: string;
+  postgresql: {
+    url: string;
+    schema: string;
+  };
+  redis: {
+    host: string;
+    port: number;
+  };
 }
 
 export interface IJWTConfig {

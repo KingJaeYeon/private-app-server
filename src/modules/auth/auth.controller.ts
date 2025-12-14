@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common
 import { AuthService } from '@/modules/auth/auth.service';
 import type { Request, Response } from 'express';
 import { CheckBlacklist, ClientInfo, Public } from '@/common/decorators';
-import { SendVerificationEmailDto, SignInDto, SignUpDto, VerifyEmailDto } from '@/modules/auth/dto';
+import { RequestEmailVerificationDto, SignInDto, SignUpDto, VerifyEmailDto } from '@/modules/auth/dto';
 import { VerificationService } from '@/modules/auth/verification.service';
 import { AUTH_COOKIE } from '@/common/constants/auth';
 import { CustomException } from '@/common/exceptions';
@@ -140,14 +140,14 @@ export class AuthController {
     return { message: 'Logged out' };
   }
 
-  @Post('send-verification-email')
+  @Post('request-email-verification')
   @ApiActionResponse({
     operations: { description: '인증 이메일 발송' },
     body: { message: 'Verification email sent' }
   })
   @CheckBlacklist()
-  async sendVerificationEmail(@Body() dto: SendVerificationEmailDto, @ClientInfo() { ip }: IClientInfoData) {
-    await this.verifyEmailService.requestEmailVerification(dto.email, ip);
+  async requestEmailVerification(@Body() dto: RequestEmailVerificationDto, @ClientInfo() { ip }: IClientInfoData) {
+    await this.verifyEmailService.requestEmailVerification(dto, ip);
     return { message: 'Verification email sent' };
   }
 

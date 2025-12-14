@@ -21,7 +21,7 @@ datasource db {
 model User {
   id            String     @id @default(cuid())
   email         String     @unique
-  emailVerified DateTime?  @map("email_verified")
+  emailVerified Boolean?   @map("email_verified")
   username      String?    @unique
   password      String?
   bio           String?

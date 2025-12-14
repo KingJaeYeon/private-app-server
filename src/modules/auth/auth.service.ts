@@ -59,7 +59,7 @@ export class AuthService {
       email: dto.email,
       password: dto.password,
       username: dto.email.split('@')[0],
-      emailVerified: new Date()
+      emailVerified: true
     });
   }
 }
