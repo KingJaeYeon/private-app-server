@@ -40,9 +40,9 @@ export class YoutubeSchedulerService {
 
   /**
    * 당일 업데이트 안된 채널 데이터 갱신 (Cron)
-   * Cron 표현식: '0 0 16 5 * *' (매일 16시 5분)
+   * Cron 표현식: '0 5 16 * * *' (매일 16시 5분)
    */
-  @Cron('0 0 16 5 * *', {
+  @Cron('0 5 16 * * *', {
     name: 'youtube-history',
     timeZone: 'Asia/Seoul'
   })
