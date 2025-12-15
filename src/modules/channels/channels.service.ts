@@ -6,6 +6,7 @@ import { Channel } from '@generated/prisma/client';
 import { ChannelQueryDto } from '@/modules/channels/dto/channel-query.dto';
 import { TagsService } from '@/modules/tags/tags.service';
 import { TaggableType } from '@generated/prisma/client';
+import { ChannelSuggestResponseDto } from '@/modules/channels/dto/channel-suggest.dto';
 
 @Injectable()
 export class ChannelsService {
@@ -100,5 +101,19 @@ export class ChannelsService {
       ...ChannelResponseDto.from(channel, isSubscribed),
       ...(tags && { tags })
     };
+  }
+
+  async getChannelSuggest(keyword: string): Promise<ChannelSuggestResponseDto[]> {
+    return this.db.channel.findMany({
+      take: 10,
+      where: { name: { contains: keyword } },
+      orderBy: { subscriberCount: 'desc' },
+      select: {
+        channelId: true,
+        subscriberCount: true,
+        thumbnailUrl: true,
+        name: true
+      }
+    });
   }
 }

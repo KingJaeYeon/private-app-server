@@ -9,6 +9,7 @@ import { ApiGetResponse } from '@/common/decorators/api-get-response.decorator';
 import { Public } from '@/common/decorators';
 import { toResponseDto } from '@/common/helper/to-response-dto.helper';
 import { ChannelQueryDto } from '@/modules/channels/dto/channel-query.dto';
+import { ChannelSuggestDto, ChannelSuggestResponseDto } from '@/modules/channels/dto/channel-suggest.dto';
 
 @ApiTags('Channels')
 @Controller('channels')
@@ -41,16 +42,15 @@ export class ChannelsController {
     });
   }
 
-  @Get('public/:channelId')
   @Public()
+  @Get('suggest')
   @ApiGetResponse({
-    type: ChannelResponseDto,
-    description: '공통 채널의 상세 정보를 조회합니다.',
-    operations: { summary: '채널 상세 조회' }
+    type: ChannelSuggestResponseDto,
+    isArray: true,
+    operations: { summary: '채널 검색', description: '검색한 채널을 가져옵니다.' }
   })
-  @ApiErrorResponses(['CHANNEL_NOT_FOUND'])
-  async getChannelForPublic(@Param('channelId', ParseIntPipe) channelId: number): Promise<ChannelResponseDto> {
-    return this.channelsService.getChannelById({ channelId });
+  async getSuggest(@Query() { q }: ChannelSuggestDto) {
+    return this.channelsService.getChannelSuggest(q);
   }
 
   @Get(':channelId')
