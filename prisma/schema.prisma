@@ -114,7 +114,7 @@ model Channel {
   channelId String @unique @map("channel_id")
 
   name         String
-  handle       String?
+  handle       String? @unique
   description  String?
   link         String
   thumbnailUrl String? @map("thumbnail_url")
