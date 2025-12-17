@@ -1,45 +1,31 @@
 import { Controller, Get, Param, Query, ParseIntPipe } from '@nestjs/common';
 import { ChannelsService } from './channels.service';
-import { ChannelHistoriesService } from './channel-histories.service';
+// import { ChannelHistoriesService } from './channel-histories.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { ChannelResponseDto, ChannelHistoryResponseDto, ChannelAuthResponseDto } from './dto';
+import { ChannelResponseDto, ChannelHistoryResponseDto } from './dto';
 import { ApiErrorResponses } from '@/common/decorators/api-error-response.decorator';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiGetResponse } from '@/common/decorators/api-get-response.decorator';
 import { Public } from '@/common/decorators';
-import { toResponseDto } from '@/common/helper/to-response-dto.helper';
-import { ChannelQueryDto } from '@/modules/channels/dto/channel-query.dto';
 import { ChannelSuggestDto, ChannelSuggestResponseDto } from '@/modules/channels/dto/channel-suggest.dto';
 
 @ApiTags('Channels')
 @Controller('channels')
 export class ChannelsController {
   constructor(
-    private readonly channelsService: ChannelsService,
-    private readonly channelHistoriesService: ChannelHistoriesService
+    private readonly channelsService: ChannelsService
+    // private readonly channelHistoriesService: ChannelHistoriesService
   ) {}
 
-  @Get()
+  // 채널 검색 (필터 + 페이지네이션)
+  @Public()
+  @Get('search')
   @ApiGetResponse({
-    type: ChannelAuthResponseDto,
-    isArray: true,
-    operations: { summary: '공통 채널 목록 조회 ', description: '공통 채널 목록을 조회합니다.' }
+    type: ChannelSearchResponseDto,
+    operations: { summary: '채널 검색', description: '필터와 함께 채널 검색' }
   })
-  @ApiErrorResponses(['UNAUTHORIZED'])
-  async getChannels(
-    @CurrentUser('userId') userId: string,
-    @Query() query: ChannelQueryDto
-  ): Promise<ChannelAuthResponseDto> {
-    const channels = await this.channelsService.getChannelsWithSubscription(userId, query);
-    const lastCursor = channels.length > 0 ? channels[channels.length - 1].id : null;
-
-    return toResponseDto(ChannelAuthResponseDto, {
-      channel: toResponseDto(ChannelResponseDto, channels),
-      cursor: lastCursor,
-      hasNext: channels.length === query.take,
-      orderBy: query.orderBy,
-      order: query.order
-    });
+  async searchChannels(@Query() dto: ChannelSearchDto) {
+    return this.channelsService.searchChannels(dto);
   }
 
   @Public()
@@ -47,13 +33,14 @@ export class ChannelsController {
   @ApiGetResponse({
     type: ChannelSuggestResponseDto,
     isArray: true,
-    operations: { summary: '채널 검색', description: '검색한 채널을 가져옵니다.' }
+    operations: { summary: '채널 자동완성' }
   })
   async getSuggest(@Query() { q }: ChannelSuggestDto) {
     return this.channelsService.getChannelSuggest(q);
   }
 
   @Get(':channelId')
+  @Public()
   @ApiGetResponse({
     type: ChannelResponseDto,
     description: '공통 채널의 상세 정보를 조회합니다.',

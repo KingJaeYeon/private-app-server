@@ -15,6 +15,20 @@ export class ChannelsService {
     private readonly tagsService: TagsService
   ) {}
 
+  async getChannel(identifier: string) {
+    const channel = await this.db.channel.findFirst({
+      where: {
+        OR: [{ channelId: identifier }, { handle: identifier }]
+      }
+    });
+
+    if (!channel) {
+      throw new CustomException('CHANNEL_NOT_FOUND');
+    }
+
+    return channel;
+  }
+
   async getChannelsWithSubscription(userId: string, query: ChannelQueryDto): Promise<Channel[]> {
     const { take, orderBy, order, cursor } = query;
 

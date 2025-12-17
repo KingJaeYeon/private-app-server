@@ -19,6 +19,7 @@ import { ReferencesModule } from './modules/references/references.module';
 import { PublicModule } from './modules/public/public.module';
 import { TimingInterceptor } from '@/common/interceptors/timing.interceptor';
 import { RedisModule } from './modules/redis/redis.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -38,7 +39,8 @@ const isDev = process.env.NODE_ENV === 'development';
     ReferencesModule,
     YoutubeModule,
     PublicModule,
-    RedisModule
+    RedisModule,
+    SubscriptionsModule
   ],
   controllers: [AppController],
   providers: [
