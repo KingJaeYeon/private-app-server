@@ -14,6 +14,7 @@ import { CookieService } from '@/modules/auth/cookie.service';
 import { GoogleAuthGuard } from '@/modules/auth/guards/google-auth.guard';
 import { ConfigService } from '@nestjs/config';
 import { IAppConfig } from '@/config/config.interface';
+import { ApiGetResponse } from '@/common/decorators/api-get-response.decorator';
 
 @Public()
 @Controller('auth')
@@ -28,11 +29,13 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(GoogleAuthGuard)
+  @ApiGetResponse({ operations: { summary: '구글 로그인' } })
   async googleAuth(): Promise<void> {
     console.log('call google auth page');
   }
 
   @Get('google/callback')
+  @ApiGetResponse({ headers, operations: { summary: '구글 로그인 콜백' } })
   @UseGuards(GoogleAuthGuard)
   async googleAuthCallback(@Req() req, @Res() res: Response, @ClientInfo() info: IClientInfoData): Promise<void> {
     const token = await this.tokenService.generateTokenPair(req.user.id, {
@@ -109,7 +112,7 @@ export class AuthController {
   @Post('refresh')
   @ApiActionResponse({
     body: { message: 'Token refreshed.' },
-    operations: { description: '리프레시 토큰 재발급' }
+    operations: { summary: 'Refresh Token 재발급' }
   })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response, @ClientInfo() info: IClientInfoData) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
@@ -128,7 +131,7 @@ export class AuthController {
   @Post('logout')
   @ApiActionResponse({
     body: { message: 'Logged out' },
-    operations: { description: '로그아웃 성공 - 쿠키제거' }
+    operations: { summary: '로그아웃' }
   })
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies[AUTH_COOKIE.REFRESH];
@@ -143,7 +146,7 @@ export class AuthController {
 
   @Post('request-email-verification')
   @ApiActionResponse({
-    operations: { description: '회원가입 인증 이메일 발송' },
+    operations: { description: '회원가입 인증 이메일 발송', summary: '로컬 회원가입 단계 1' },
     body: { message: 'Verification email sent' }
   })
   @CheckBlacklist()
@@ -153,7 +156,8 @@ export class AuthController {
 
   @Post('verify-email')
   @ApiActionResponse({
-    operations: { description: '이메일 인증 성공' },
+    headers,
+    operations: { description: '이메일 인증 성공 및 자동 로그인', summary: '로컬 회원가입 단계 2' },
     body: { message: 'Email verified' }
   })
   async verifyEmail(

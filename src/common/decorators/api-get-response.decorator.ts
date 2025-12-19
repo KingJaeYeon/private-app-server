@@ -1,11 +1,19 @@
 import { applyDecorators, Type } from '@nestjs/common';
-import { ApiExtraModels, ApiOkResponse, ApiOperation, ApiOperationOptions, getSchemaPath } from '@nestjs/swagger';
+import {
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiOperation,
+  ApiOperationOptions,
+  ApiResponseOptions,
+  getSchemaPath
+} from '@nestjs/swagger';
 
 type Options<T> = {
-  type: Type<T>;
+  type?: Type<T>;
   isArray?: boolean;
   description?: string;
   operations: ApiOperationOptions;
+  headers?: ApiResponseOptions['headers'];
 };
 
 /**
@@ -15,7 +23,23 @@ type Options<T> = {
  * ApiGetResponse({ type: UserDto, isArray: true, description: '유저 목록' })
  */
 export function ApiGetResponse<T>(options: Options<T>) {
-  const { description, type, isArray = false, operations } = options ?? {};
+  const { description, type, isArray = false, operations, headers } = options ?? {};
+
+  if (!type) {
+    return applyDecorators(
+      ApiOperation(operations),
+      ApiOkResponse({
+        headers,
+        schema: {
+          description,
+          properties: {
+            success: { type: 'boolean', example: true },
+            timestamp: { type: 'string', format: 'date-time' }
+          }
+        }
+      })
+    );
+  }
 
   const dataSchema = isArray
     ? {
@@ -27,6 +51,7 @@ export function ApiGetResponse<T>(options: Options<T>) {
   return applyDecorators(
     ApiOperation(operations),
     ApiOkResponse({
+      headers,
       schema: {
         description,
         properties: {
