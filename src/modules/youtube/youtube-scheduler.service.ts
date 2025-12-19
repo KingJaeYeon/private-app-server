@@ -143,4 +143,70 @@ export class YoutubeSchedulerService {
       this.logger.error(`❌ 채널 데이터 갱신 실패 :${error}`);
     }
   }
+
+  @Cron('0 2 * * *')
+  async updateDailyViewCounts() {
+    this.logger.log('일일 조회수 업데이트 시작');
+
+    try {
+      // 모든 채널 ID 조회
+      const channels = await this.db.channel.findMany({
+        select: { id: true }
+      });
+
+      const channelIds = channels.map((c) => c.id);
+
+      // 배치로 일일 조회수 계산
+      const dailyViewsMap = await this.calculateDailyViewsBatch(channelIds);
+
+      // 한 번에 업데이트 (트랜잭션)
+      await this.db.$transaction(
+        Array.from(dailyViewsMap.entries()).map(([channelId, dailyViews]) =>
+          this.db.channel.update({
+            where: { id: channelId },
+            data: { dailyViewCount: dailyViews }
+          })
+        )
+      );
+
+      this.logger.log(`일일 조회수 업데이트 완료: ${channelIds.length}개 채널`);
+    } catch (error) {
+      this.logger.error('일일 조회수 업데이트 실패', error);
+    }
+  }
+  /**
+   * 여러 채널의 일일 조회수 한 번에 계산
+   */
+  async calculateDailyViewsBatch(channelIds: number[]): Promise<Map<number, number>> {
+    const result = new Map<number, number>();
+
+    // 각 채널의 최근 2개 히스토리 조회
+    const histories = await this.db.channelHistory.findMany({
+      where: { channelId: { in: channelIds } },
+      orderBy: { createdAt: 'desc' },
+      take: channelIds.length * 2
+    });
+
+    // 채널별로 그룹화
+    const grouped = new Map<number, typeof histories>();
+    histories.forEach((h) => {
+      if (!grouped.has(h.channelId)) {
+        grouped.set(h.channelId, []);
+      }
+      grouped.get(h.channelId)!.push(h);
+    });
+
+    // 각 채널의 일일 조회수 계산
+    grouped.forEach((records, channelId) => {
+      if (records.length >= 2) {
+        const [today, yesterday] = records;
+        const diff = Number(today.viewCount - yesterday.viewCount);
+        result.set(channelId, diff > 0 ? diff : 0);
+      } else {
+        result.set(channelId, 0);
+      }
+    });
+
+    return result;
+  }
 }
