@@ -125,6 +125,7 @@ model Channel {
   videoCount      Int    @default(0) @map("video_count")
   viewCount       BigInt @default(0) @map("view_count")
   subscriberCount Int    @default(0) @map("subscriber_count")
+  dailyViewCount  Int    @default(0) @map("daily_view_count")
 
   publishedAt         DateTime  @map("published_at")
   createdAt           DateTime  @default(now()) @map("created_at")
