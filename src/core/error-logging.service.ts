@@ -36,6 +36,7 @@ export class ErrorLoggingService {
       path: request.url,
       method: request.method,
       statusCode: errorResponse.statusCode,
+      details: errorResponse.details,
       userId: (request as any).user?.id,
       ip: this.extractIp(request),
       userAgent: request.headers['user-agent'],

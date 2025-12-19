@@ -1,17 +1,17 @@
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsEnum, IsInt, IsNumber, IsOptional, Max, Min } from 'class-validator';
-import { ChannelOrderByEnum, ChannelOrderEnum } from '@/modules/channels/dto';
+import { ChannelSortEnum, ChannelOrderEnum } from '@/modules/channels/dto';
 import { CursorPaginationDto } from '@/common/dto/cursor-pagination.dto';
 
 export class ChannelQueryDto extends CursorPaginationDto {
   /** 정렬키 값 @example 'createdAt'*/
   @IsOptional()
-  @IsEnum(ChannelOrderByEnum)
-  orderBy: ChannelOrderByEnum = ChannelOrderByEnum.createdAt;
+  @IsEnum(ChannelSortEnum)
+  orderBy: ChannelSortEnum = ChannelSortEnum.CREATED_AT;
 
   /** 정렬 @example 'desc'*/
   @IsOptional()
   @IsEnum(ChannelOrderEnum)
-  order: ChannelOrderEnum = ChannelOrderEnum.desc;
+  order: ChannelOrderEnum = ChannelOrderEnum.DESC;
 }
 
 export class SubscriptionsQueryDto extends ChannelQueryDto {

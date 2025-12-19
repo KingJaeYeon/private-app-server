@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthService } from '@/modules/auth/auth.service';
 import type { Request, Response } from 'express';
-import { CheckBlacklist, ClientInfo, Public } from '@/common/decorators';
-import { RequestEmailVerificationDto, SignInDto, SignUpDto, VerifyEmailDto } from '@/modules/auth/dto';
+import { CheckBlacklist, ClientInfo } from '@/common/decorators';
+import { RequestEmailVerificationDto, SignInDto, VerifyEmailDto } from '@/modules/auth/dto';
 import { VerificationService } from '@/modules/auth/verification.service';
 import { AUTH_COOKIE } from '@/common/constants/auth';
 import { CustomException } from '@/common/exceptions';
@@ -16,7 +16,6 @@ import { ConfigService } from '@nestjs/config';
 import { IAppConfig } from '@/config/config.interface';
 import { ApiGetResponse } from '@/common/decorators/api-get-response.decorator';
 
-@Public()
 @Controller('auth')
 export class AuthController {
   constructor(

@@ -1872,6 +1872,7 @@ function main() {
     lastVideoUploadedAt: new Date(channel.lastVideoPublishedAt),
     createdAt: new Date(channel.createdAt),
     updatedAt: new Date(channel.fetchedAt),
+    dailyViewCount: 0,
     defaultLanguage: ''
   }));
   // prisma.channel.createMany({ data: temp }).then((r) => console.log(r));

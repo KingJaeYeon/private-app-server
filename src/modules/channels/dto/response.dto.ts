@@ -1,36 +1,24 @@
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { Channel, Tag } from '@generated/prisma/client';
 import { Expose, Transform, Type } from 'class-transformer';
-import { ChannelOrderByEnum, ChannelOrderEnum } from '@/modules/channels/dto/index';
 import { CursorPaginationResponseDto } from '@/common/dto/cursor-pagination.dto';
+import { ChannelSortEnum, ChannelOrderEnum } from '@/modules/channels/dto/index';
+
+export class SuggestResponseDto {
+  @IsString()
+  channelId: string;
+  @IsNumber()
+  subscriberCount: number;
+  @IsString()
+  @IsOptional()
+  thumbnailUrl: string | null;
+  @IsString()
+  name: string;
+}
 
 type ChannelWithStringViewCount = Omit<Channel, 'viewCount'> & {
   viewCount: number;
 };
-
-export class ChannelTagDto implements Pick<Tag, 'id' | 'name' | 'slug'> {
-  /** 태그 ID @example 1*/
-  id: number;
-  /** 태그 이름 @example "개발"*/
-  name: string;
-  /** 태그 슬러그 @example "development"*/
-  slug: string;
-}
-
-/** 구독 정보 응답 DTO */
-export class SubscriptionResponseDto {
-  /** 구독 ID @example 1*/
-  id: number;
-  /** 채널 정보 */
-  channel: ChannelResponseDto;
-  /** 연결된 태그들 @example [{ id: 1, name: "개발", slug: "development" }]*/
-  tags: ChannelTagDto[];
-  /** 구독 생성일 @example "2025-01-01T00:00:00.000Z"*/
-  @Type(() => Date)
-  createdAt: Date;
-  /** 구독 수정일 @example "2025-01-01T00:00:00.000Z"*/
-  @Type(() => Date)
-  updatedAt: Date;
-}
 
 export class ChannelBaseResponseDto implements ChannelWithStringViewCount {
   /** 채널 ID @example 1*/
@@ -60,6 +48,9 @@ export class ChannelBaseResponseDto implements ChannelWithStringViewCount {
   /** 기본 언어 @example "ko"*/
   @Expose()
   defaultLanguage: string | null;
+  /** 1일 조회수 @example 1000 */
+  @Expose()
+  dailyViewCount: number;
   /** 영상 수 @example 410*/
   @Expose()
   videoCount: number;
@@ -88,10 +79,24 @@ export class ChannelBaseResponseDto implements ChannelWithStringViewCount {
   updatedAt: Date;
 }
 
+export class ChannelTagDto implements Pick<Tag, 'id' | 'name' | 'slug'> {
+  /** 태그 ID @example 1*/
+  @Expose()
+  id: number;
+  /** 태그 이름 @example "개발"*/
+  @Expose()
+  name: string;
+  /** 태그 슬러그 @example "development"*/
+  @Expose()
+  slug: string;
+}
+
 export class ChannelResponseDto extends ChannelBaseResponseDto {
   /** 현재 유저의 구독 여부 @example false*/
+  @Expose()
   isSubscribed: boolean = false;
   /** 연결된 태그들 (구독 중일 때만 포함) @example [{ id: 1, name: "개발", slug: "development" }]*/
+  @Expose()
   tags?: ChannelTagDto[];
 
   static from(channel: Channel, isSubscribed = false): ChannelResponseDto {
@@ -108,6 +113,7 @@ export class ChannelResponseDto extends ChannelBaseResponseDto {
       videoCount: channel.videoCount,
       viewCount: Number(channel.viewCount),
       subscriberCount: channel.subscriberCount,
+      dailyViewCount: channel.dailyViewCount,
       publishedAt: channel.publishedAt,
       lastVideoUploadedAt: channel.lastVideoUploadedAt,
       createdAt: channel.createdAt,
@@ -122,5 +128,15 @@ export class ChannelAuthResponseDto extends CursorPaginationResponseDto {
   /** @example 'desc'*/
   order: ChannelOrderEnum;
   /** @example 'createdAt'*/
-  orderBy: ChannelOrderByEnum;
+  orderBy: ChannelSortEnum;
+}
+
+export class ChannelListResponseDto {
+  /** 채널 목록 */
+  @Expose()
+  @Type(() => ChannelResponseDto)
+  data: ChannelResponseDto[];
+  /** 다음 페이지 커서 (없으면 null) @example 19 */
+  @Expose()
+  nextCursor: number | null;
 }

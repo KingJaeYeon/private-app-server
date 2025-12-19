@@ -8,7 +8,6 @@ import { UsersModule } from '@/modules/users/users.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from '@/config/configuration';
-import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { AllExceptionsFilter } from '@/common/filters';
 import { ResponseInterceptor, YoutubeApiUsageInterceptor } from '@/common/interceptors';
 import { BlacklistGuard } from '@/common/guards/blacklist.guard';
@@ -46,7 +45,6 @@ const isDev = process.env.NODE_ENV === 'development';
   providers: [
     AppService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: BlacklistGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
