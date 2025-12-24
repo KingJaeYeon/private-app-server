@@ -4,7 +4,7 @@ import { YoutubeApiKeyService } from './youtube-api-key.service';
 import { PrismaService } from '@/core/prisma.service';
 import { YoutubeApiService } from '@/modules/youtube/youtube-api.service';
 import { ChannelHistory } from '@generated/prisma/client';
-
+import { addHours, startOfDay } from 'date-fns';
 /**
  * YouTube API 키 사용량 초기화 스케줄러
  * 매일 16:00에 모든 사용자의 일일 사용량을 초기화
@@ -12,7 +12,6 @@ import { ChannelHistory } from '@generated/prisma/client';
 @Injectable()
 export class YoutubeSchedulerService {
   private readonly logger = new Logger(YoutubeSchedulerService.name);
-
   constructor(
     private readonly apiKeyService: YoutubeApiKeyService,
     private readonly db: PrismaService,
@@ -42,21 +41,24 @@ export class YoutubeSchedulerService {
    * 당일 업데이트 안된 채널 데이터 갱신 (Cron)
    * Cron 표현식: '0 5 16 * * *' (매일 16시 5분)
    */
-  @Cron('0 5 16 * * *', {
-    name: 'youtube-history',
-    timeZone: 'Asia/Seoul'
-  })
-  // @Timeout(0)
+  // @Cron('0 5 16 * * *', {
+  //   name: 'youtube-history',
+  //   timeZone: 'Asia/Seoul'
+  // })
+  @Timeout(0)
   async updateAllChannelsFromYouTube() {
     this.logger.log('🔄 채널 데이터 갱신 스케줄러 시작');
 
     try {
+      const KST_OFFSET = 9;
       // 1. 당일 갱신되지 않은 채널 조회
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const now = new Date();
+      const kstNow = addHours(now, KST_OFFSET); // UTC → KST
+      const kstMidnight = startOfDay(kstNow); // KST 오늘 00:00
+      const kstMidnightUtc = addHours(kstMidnight, -KST_OFFSET);
 
       const channels = await this.db.channel.findMany({
-        where: { updatedAt: { lt: today } },
+        where: { updatedAt: { lt: kstMidnightUtc } },
         select: {
           id: true,
           channelId: true,
@@ -86,7 +88,6 @@ export class YoutubeSchedulerService {
       this.logger.log(`✅ API 응답: ${allItems.length}개 채널`);
 
       // 3. 데이터 변환 및 업데이트
-      const now = new Date();
       const historyData: Omit<ChannelHistory, 'id' | 'createdAt'>[] = [];
 
       const channelMap = new Map(channels.map(({ channelId, ...others }) => [channelId, others]));
