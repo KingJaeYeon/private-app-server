@@ -130,20 +130,22 @@ export class YoutubeApiService {
    */
   async fetchLastVideoUploadedAt(params: IFetchPlaylistItems) {
     const { apiKey, upload, apiKeyId, userId } = params;
-
-    const { data } = await this.api.get('playlistItems', {
-      params: {
-        key: apiKey,
-        part: 'snippet,contentDetails',
-        playlistId: upload,
-        maxResults: 1
-      }
-    });
-    await this.updateApiKeyUsage(apiKeyId, userId, 1, 'playlistItems');
-
-    const lastVideoUploadedAt = data?.items?.[0]?.snippet?.publishedAt;
-
-    return { lastVideoUploadedAt, usedQuota: 1 };
+    try {
+      const { data } = await this.api.get('playlistItems', {
+        params: {
+          key: apiKey,
+          part: 'snippet,contentDetails',
+          playlistId: upload,
+          maxResults: 1
+        }
+      });
+      const lastVideoUploadedAt = data?.items?.[0]?.snippet?.publishedAt;
+      return { lastVideoUploadedAt, usedQuota: 1 };
+    } catch (error) {
+      return { lastVideoUploadedAt: null, usedQuota: 1 };
+    } finally {
+      await this.updateApiKeyUsage(apiKeyId, userId, 1, 'playlistItems');
+    }
   }
 
   /**
